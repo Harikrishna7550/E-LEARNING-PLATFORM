@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir frontend\\\\src /s /b)",
+      "Bash(findstr /i quiz)"
+    ]
+  }
+}
