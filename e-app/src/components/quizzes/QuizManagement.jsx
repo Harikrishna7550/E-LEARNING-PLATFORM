@@ -12,6 +12,7 @@ const QuizManagement = ({
   onCreateQuiz,
   onUpdateQuiz,
   onPublishQuiz,
+  onDeleteQuiz,
   onExtendDeadline,
   quizAttempts = [],
   users = [],
@@ -88,6 +89,18 @@ const QuizManagement = ({
     } else {
       toast.error("Error: Quiz not found");
       setShowPublishModal(false);
+    }
+  };
+
+  const handleDeleteQuiz = (quiz) => {
+    if (!onDeleteQuiz) return;
+    if (window.confirm(`Are you sure you want to delete the quiz "${quiz.title}"? This cannot be undone.`)) {
+      onDeleteQuiz(quiz.id || quiz._id);
+      if (selectedQuiz && (selectedQuiz.id === quiz.id || selectedQuiz._id === quiz._id)) {
+        setSelectedQuiz(null);
+        setActiveSubTab("created");
+      }
+      toast.success("Quiz deleted successfully.");
     }
   };
 
@@ -175,18 +188,26 @@ const QuizManagement = ({
                     <p className="small text-muted mb-3">
                       Questions: {quiz.totalQuestions}
                     </p>
-                    <div className="mt-auto">
+                    <div className="mt-auto d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                      <div className="d-flex flex-wrap gap-2">
+                        <button
+                          className="btn btn-primary btn-sm"
+                          onClick={() => handleQuizClick(quiz)}
+                        >
+                          <i className="bi bi-eye me-1"></i>Preview
+                        </button>
+                        <button
+                          className="btn btn-success btn-sm"
+                          onClick={() => handlePublishClick(quiz)}
+                        >
+                          <i className="bi bi-upload me-1"></i>Publish
+                        </button>
+                      </div>
                       <button
-                        className="btn btn-primary btn-sm me-2"
-                        onClick={() => handleQuizClick(quiz)}
+                        className="btn btn-danger btn-sm"
+                        onClick={() => handleDeleteQuiz(quiz)}
                       >
-                        <i className="bi bi-eye me-1"></i>Preview
-                      </button>
-                      <button
-                        className="btn btn-success btn-sm"
-                        onClick={() => handlePublishClick(quiz)}
-                      >
-                        <i className="bi bi-upload me-1"></i>Publish
+                        <i className="bi bi-trash me-1"></i>Delete
                       </button>
                     </div>
                   </div>

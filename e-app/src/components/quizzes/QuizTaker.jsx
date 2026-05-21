@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 
 // QuizTaker - student interface to answer quiz questions and get results
-const QuizTaker = ({ quiz, studentId, onComplete }) => {
+const QuizTaker = ({ quiz, studentId, onComplete, onClose }) => {
   // Track current question being displayed
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   // Store student's answers to each question
@@ -59,6 +59,17 @@ const QuizTaker = ({ quiz, studentId, onComplete }) => {
       : [],
   };
   const totalQuestions = quiz.questions.length;
+
+  const hasPassingPercentage =
+    typeof quiz.hasPassingPercentage === "boolean"
+      ? quiz.hasPassingPercentage
+      : quiz.passingPercentage !== undefined;
+  const effectivePassingPercentage =
+    hasPassingPercentage && quiz.passingPercentage !== undefined
+      ? quiz.passingPercentage
+      : 70;
+
+  const passed = score >= effectivePassingPercentage;
 
   // Calculate time left if deadline exists
   useEffect(() => {
@@ -179,80 +190,105 @@ const QuizTaker = ({ quiz, studentId, onComplete }) => {
             <div className="card shadow border-0">
               <div className="card-body text-center py-5">
                 <div
-                  className={`display-1 mb-4 ${score >= 70 ? "text-success" : score >= 50 ? "text-warning" : "text-danger"}`}
+                  className={`display-1 mb-4 ${passed ? "text-success" : score >= 50 ? "text-warning" : "text-danger"}`}
                 >
-                  {score >= 70 ? "🎉" : score >= 50 ? "👍" : "😞"}
+                  {passed ? "🎉" : score >= 50 ? "👍" : "😞"}
                 </div>
                 <h2 className="mb-3">Quiz Completed!</h2>
-                <div className="mb-4">
-                  <div className="display-4 fw-bold mb-2">{score}%</div>
-                  <p className="text-muted">Your Score</p>
-                </div>
+                <p className={`lead mb-4 ${passed ? "text-success" : "text-danger"}`}>
+                  {quiz.showScoreToStudent
+                    ? passed
+                      ? "Congratulations! You passed the quiz."
+                      : `Unfortunately, you failed. You needed ${effectivePassingPercentage}% to pass.`
+                    : passed
+                      ? "Congratulations! You passed."
+                      : "Unfortunately, you failed."}
+                </p>
+                {quiz.showScoreToStudent ? (
+                  <>
+                    <div className="mb-4">
+                      <div className="display-4 fw-bold mb-2">{score}%</div>
+                      <p className="text-muted">Your Score</p>
+                    </div>
 
-                {quiz.showScoreToStudent && (
-                  <div className="row text-center mb-4">
-                    <div className="col-md-4">
-                      <div className="p-3 bg-light rounded">
-                        <h5>Correct Answers</h5>
-                        <div className="h4 text-success">
-                          {Math.round((score / 100) * totalQuestions)}
+                    <div className="row text-center mb-4">
+                      <div className="col-md-4">
+                        <div className="p-3 bg-light rounded">
+                          <h5>Correct Answers</h5>
+                          <div className="h4 text-success">
+                            {Math.round((score / 100) * totalQuestions)}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="col-md-4">
-                      <div className="p-3 bg-light rounded">
-                        <h5>Total Questions</h5>
-                        <div className="h4">{totalQuestions}</div>
+                      <div className="col-md-4">
+                        <div className="p-3 bg-light rounded">
+                          <h5>Total Questions</h5>
+                          <div className="h4">{totalQuestions}</div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="col-md-4">
-                      <div className="p-3 bg-light rounded">
-                        <h5>Status</h5>
-                        <div
-                          className={`h4 ${
-                            quiz.hasPassingPercentage && quiz.passingPercentage
-                              ? score >= quiz.passingPercentage
+                      <div className="col-md-4">
+                        <div className="p-3 bg-light rounded">
+                          <h5>Status</h5>
+                          <div
+                            className={`h4 ${
+                              score >= effectivePassingPercentage
                                 ? "text-success"
                                 : "text-danger"
-                              : score >= 70
-                                ? "text-success"
-                                : score >= 50
-                                  ? "text-warning"
-                                  : "text-danger"
-                          }`}
-                        >
-                          {quiz.hasPassingPercentage && quiz.passingPercentage
-                            ? score >= quiz.passingPercentage
+                            }`}
+                          >
+                            {score >= effectivePassingPercentage
                               ? "Passed ✓"
-                              : "Failed ✗"
-                            : score >= 70
-                              ? "Passed ✓"
-                              : score >= 50
-                                ? "Average"
-                                : "Failed ✗"}
+                              : "Failed ✗"}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
 
-                {quiz.hasPassingPercentage && quiz.passingPercentage && (
-                  <div className="alert alert-info mb-4">
-                    <strong>Passing Score:</strong> {quiz.passingPercentage}%{" "}
-                    <br />
-                    <strong>Your Score:</strong> {score}% <br />
-                    <strong>Result:</strong>{" "}
-                    {score >= quiz.passingPercentage
-                      ? "✓ You Passed!"
-                      : "✗ You did not pass. Required: " +
-                        quiz.passingPercentage +
-                        "%"}
+                    {hasPassingPercentage && quiz.passingPercentage !== undefined && (
+                      <div className="alert alert-info mb-4">
+                        <strong>Passing Score:</strong> {quiz.passingPercentage}%{" "}
+                        <br />
+                        <strong>Your Score:</strong> {score}% <br />
+                        <strong>Result:</strong>{" "}
+                        {score >= quiz.passingPercentage
+                          ? "✓ You Passed!"
+                          : "✗ You did not pass. Required: " +
+                            quiz.passingPercentage +
+                            "%"}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="mb-4">
+                    <div className={`p-4 rounded ${
+                      passed
+                        ? "bg-success bg-opacity-10 text-success"
+                        : "bg-danger bg-opacity-10 text-danger"
+                    }`}>
+                      <div className="h2 mb-2">
+                        {passed ? "Passed" : "Failed"}
+                      </div>
+                      <p className="mb-1">
+                        Your quiz result has been recorded.
+                      </p>
+                      {hasPassingPercentage && quiz.passingPercentage !== undefined && (
+                        <p className="mb-0">
+                          Required: {quiz.passingPercentage}% to pass.
+                        </p>
+                      )}
+                    </div>
                   </div>
                 )}
 
                 <button
                   className="btn btn-primary btn-lg"
-                  onClick={() => window.location.reload()}
+                  onClick={() => {
+                    if (typeof onClose === "function") {
+                      onClose();
+                    } else {
+                      window.location.reload();
+                    }
+                  }}
                 >
                   Back to Dashboard
                 </button>
@@ -320,23 +356,20 @@ const QuizTaker = ({ quiz, studentId, onComplete }) => {
                           <i className="bi bi-trophy me-2"></i>Passing Criteria
                         </h6>
                         <div className="mb-3">
-                          {quiz.hasPassingPercentage &&
-                          quiz.passingPercentage ? (
+                          {hasPassingPercentage ? (
                             <div>
                               <div className="h5 text-success mb-2">
-                                {quiz.passingPercentage}%
+                                {effectivePassingPercentage}%
                               </div>
                               <p className="mb-0">
-                                You need to score at least{" "}
-                                {quiz.passingPercentage}% to pass this quiz.
+                                You need to score at least {effectivePassingPercentage}% to pass this quiz.
                               </p>
                             </div>
                           ) : (
                             <div>
                               <div className="h5 text-success mb-2">70%</div>
                               <p className="mb-0">
-                                You need to score at least 70% to pass this
-                                quiz.
+                                You need to score at least 70% to pass this quiz.
                               </p>
                             </div>
                           )}

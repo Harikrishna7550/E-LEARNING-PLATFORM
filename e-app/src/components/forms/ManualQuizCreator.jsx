@@ -40,6 +40,18 @@ const ManualQuizCreator = ({ onCreate }) => {
       return;
     }
 
+    const correctAnswerMissing =
+      currentQuestion.type === "text"
+        ? !currentQuestion.correctAnswer?.toString().trim()
+        : currentQuestion.type === "multiple"
+        ? !Array.isArray(currentQuestion.correctAnswer) || currentQuestion.correctAnswer.length === 0
+        : !currentQuestion.correctAnswer;
+
+    if (correctAnswerMissing) {
+      toast.warning("Please select or enter the correct answer before saving this question.");
+      return;
+    }
+
     // For text type, ensure options are empty so previews/quiz takers don't render boxes
     const sanitized =
       currentQuestion.type === "text"

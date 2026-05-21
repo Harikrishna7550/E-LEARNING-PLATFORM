@@ -27,7 +27,19 @@ exports.getMyQuizzes = async (req, res) => {
 
 exports.createQuiz = async (req, res) => {
   try {
-    const { title, description, courseId, questions, maxAttempts, passingPercentage, showScoreToStudent } = req.body;
+    const {
+      title,
+      description,
+      courseId,
+      questions,
+      maxAttempts,
+      passingPercentage,
+      showScoreToStudent,
+      hasPassingPercentage,
+      hasTimeLimit,
+      timeLimit,
+      deadline,
+    } = req.body;
     const user = req.user;
     if (!['instructor', 'admin'].includes(user.role)) {
       return res.status(403).json({ message: 'Forbidden: only instructors can create quizzes' });
@@ -49,6 +61,10 @@ exports.createQuiz = async (req, res) => {
       questions: questions || [],
       maxAttempts: maxAttempts || 1,
       passingPercentage: passingPercentage || 70,
+      hasPassingPercentage: hasPassingPercentage !== undefined ? hasPassingPercentage : true,
+      hasTimeLimit: hasTimeLimit !== undefined ? hasTimeLimit : false,
+      timeLimit: timeLimit || 0,
+      deadline: deadline ? new Date(deadline) : undefined,
       showScoreToStudent: showScoreToStudent !== false,
       published: false,
     });

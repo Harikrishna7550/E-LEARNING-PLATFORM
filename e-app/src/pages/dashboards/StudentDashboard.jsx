@@ -31,6 +31,7 @@ export default function StudentDashboard() {
   // Track if student is currently taking a quiz
   const [takingQuiz, setTakingQuiz] = useState(null);
   const [quizAttempts, setQuizAttempts] = useState([]);
+  const [expandedQuizAttempts, setExpandedQuizAttempts] = useState({});
   // For rating form - which course to rate
   const [ratingCourseId, setRatingCourseId] = useState("");
   // For rating form - course star rating
@@ -122,18 +123,49 @@ export default function StudentDashboard() {
       ),
   );
 
-  const completedQuizzes = quizAttempts
+  const attemptsByQuiz = quizAttempts
     .filter((attempt) => attempt.studentId === user.id)
-    .map((attempt) => {
-      const quiz = quizzes.find((q) => q.id === attempt.quizId);
+    .reduce((group, attempt) => {
+      (group[attempt.quizId] = group[attempt.quizId] || []).push(attempt);
+      return group;
+    }, {});
+
+  const completedQuizzes = Object.values(attemptsByQuiz)
+    .map((attempts) => {
+      const bestAttempt = attempts.reduce((best, attempt) => {
+        const bestScore = best ? best.score : -Infinity;
+        const currentScore = attempt.score;
+        if (
+          currentScore > bestScore ||
+          (currentScore === bestScore && new Date(attempt.completedAt) > new Date(best.completedAt))
+        ) {
+          return attempt;
+        }
+        return best;
+      }, null);
+      const quiz = quizzes.find((q) => q.id === bestAttempt.quizId);
       const course = courses.find((c) => c.id === quiz?.courseId);
       return {
-        ...attempt,
+        ...bestAttempt,
         quizTitle: quiz?.title || "Unknown Quiz",
         courseTitle: course?.title || "Unknown Course",
         quiz,
+        attemptCount: attempts.length,
+        attempts: attempts
+          .map((a) => ({ ...a, quiz }))
+          .sort(
+          (a, b) => new Date(b.completedAt) - new Date(a.completedAt),
+        ),
       };
-    });
+    })
+    .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
+
+  const toggleQuizAttempts = (quizId) => {
+    setExpandedQuizAttempts((prev) => ({
+      ...prev,
+      [quizId]: !prev[quizId],
+    }));
+  };
 
   const recentActivity = [
     ...completedCourses.map((course) => ({
@@ -244,7 +276,6 @@ export default function StudentDashboard() {
       if (response.ok) {
         const newAttempt = await response.json();
         setQuizAttempts([...quizAttempts, newAttempt]);
-        setTakingQuiz(null);
         toast.success("Quiz submitted!");
       } else {
         toast.error('Failed to submit quiz attempt');
@@ -846,7 +877,7 @@ export default function StudentDashboard() {
               <h2 className="mb-4 fw-bold text-dark">Completed Quizzes</h2>
               <div className="row">
                 {completedQuizzes.map((attempt, index) => (
-                  <div key={index} className="col-md-6 mb-4">
+                  <div key={attempt.id || attempt._id || index} className="col-md-6 mb-4">
                     <div className="card shadow h-100">
                       <div className="card-body">
                         <h5 className="card-title">{attempt.quizTitle}</h5>
@@ -891,6 +922,61 @@ export default function StudentDashboard() {
                               Passing Score: {attempt.quiz.passingPercentage}%
                             </p>
                           )}
+                        {attempt.attemptCount > 1 && (
+                          <div className="mt-3">
+                            <button
+                              className="btn btn-outline-primary btn-sm"
+                              type="button"
+                              onClick={() => toggleQuizAttempts(attempt.quizId)}
+                            >
+                              {expandedQuizAttempts[attempt.quizId]
+                                ? "Hide all attempts"
+                                : `View all ${attempt.attemptCount} attempts`}
+                            </button>
+                          </div>
+                        )}
+                        {expandedQuizAttempts[attempt.quizId] && (
+                          <div className="mt-4 table-responsive">
+                            <table className="table table-sm table-bordered">
+                              <thead>
+                                <tr>
+                                  <th>Date</th>
+                                  <th>Score</th>
+                                  <th>Status</th>
+                                  <th>Passing</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {attempt.attempts.map((history) => (
+                                  <tr
+                                    key={history.id || history._id || history.completedAt}
+                                  >
+                                    <td>
+                                      {new Date(history.completedAt).toLocaleDateString()}
+                                    </td>
+                                    <td>{history.score}%</td>
+                                    <td>
+                                      {(history.quiz?.hasPassingPercentage &&
+                                        history.quiz?.passingPercentage
+                                        ? history.score >= history.quiz.passingPercentage
+                                          ? "Passed"
+                                          : "Failed"
+                                        : history.score >= 70
+                                        ? "Passed"
+                                        : "Failed")}
+                                    </td>
+                                    <td>
+                                      {history.quiz?.hasPassingPercentage &&
+                                      history.quiz?.passingPercentage
+                                        ? `${history.quiz.passingPercentage}%`
+                                        : "70%"}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -932,6 +1018,7 @@ export default function StudentDashboard() {
               quiz={takingQuiz}
               studentId={user.id}
               onComplete={handleQuizComplete}
+              onClose={() => setTakingQuiz(null)}
             />
           )}
 

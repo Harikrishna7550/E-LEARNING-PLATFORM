@@ -216,6 +216,23 @@ export default function InstructorDashboard() {
       toast.error("Error publishing quiz");
     }
   };
+  const deleteQuiz = async (quizId) => {
+    try {
+      const response = await fetch(`${API_BASE}/quizzes/${quizId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (response.ok) {
+        setQuizzes(quizzes.filter((q) => (q._id || q.id) !== quizId));
+        toast.success("Quiz deleted successfully");
+      } else {
+        toast.error("Failed to delete quiz");
+      }
+    } catch (error) {
+      console.error("Error deleting quiz", error);
+      toast.error("Error deleting quiz");
+    }
+  };
   const extendDeadline = async (quizId, newDeadline) => {
     try {
       const response = await fetch(`${API_BASE}/quizzes/${quizId}`, {
@@ -779,6 +796,7 @@ export default function InstructorDashboard() {
                 onCreateQuiz={addQuiz}
                 onUpdateQuiz={updateQuiz}
                 onPublishQuiz={publishQuiz}
+                onDeleteQuiz={deleteQuiz}
                 onExtendDeadline={extendDeadline}
               />
             </ErrorBoundary>

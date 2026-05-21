@@ -9,6 +9,7 @@ export default function CourseForm({ onSubmit, onCancel, initialData = null, ini
   const [durationDays, setDurationDays] = useState(0);
   const [durationHours, setDurationHours] = useState(0);
   const [activeTopicIndex, setActiveTopicIndex] = useState(initialActiveTopicIndex || 0);
+  const [activeSection, setActiveSection] = useState("topics");
 
   // Main course form data
   const [courseData, setCourseData] = useState({
@@ -18,7 +19,7 @@ export default function CourseForm({ onSubmit, onCancel, initialData = null, ini
     duration: "", // Will store as "12 weeks 20 days 10 hours"
     durationBreakdown: { weeks: 0, days: 0, hours: 0 }, // For easier parsing
     content: [{ topic: "", type: "url", videoUrl: "", videoFile: "", topicDesc: "" }],
-    materials: [{ type: "text", value: "" }],
+    materials: [{ type: "text", value: "", name: "" }],
   });
 
   const parseDuration = (duration = "") => {
@@ -43,7 +44,7 @@ export default function CourseForm({ onSubmit, onCancel, initialData = null, ini
         duration: "",
         durationBreakdown: { weeks: 0, days: 0, hours: 0 },
         content: [{ topic: "", type: "url", videoUrl: "", videoFile: "", topicDesc: "" }],
-        materials: [{ type: "text", value: "" }],
+        materials: [{ type: "text", value: "", name: "" }],
       });
       setDurationWeeks(0);
       setDurationDays(0);
@@ -63,12 +64,13 @@ export default function CourseForm({ onSubmit, onCancel, initialData = null, ini
           topicDesc: item.topicDesc || "",
         }))
       : [{ topic: "", type: "url", videoUrl: "", videoFile: "", topicDesc: "" }];
-    const preparedMaterials = Array.isArray(initialData.materials)
-      ? initialData.materials.map((item) => ({
-          type: item.type || "text",
-          value: item.value || "",
-        }))
-      : [{ type: "text", value: "" }];
+      const preparedMaterials = Array.isArray(initialData.materials)
+        ? initialData.materials.map((item) => ({
+            type: item.type || "text",
+            value: item.value || "",
+            name: item.name || "",
+          }))
+        : [{ type: "text", value: "", name: "" }];
 
     setCourseData({
       title: initialData.title || "",
@@ -88,6 +90,7 @@ export default function CourseForm({ onSubmit, onCancel, initialData = null, ini
       Math.max(preparedContent.length - 1, 0),
     );
     setActiveTopicIndex(safeIndex);
+    setActiveSection("topics");
   }, [initialData, initialActiveTopicIndex]);
 
   // Update course data whenever duration parts change
@@ -117,6 +120,12 @@ export default function CourseForm({ onSubmit, onCancel, initialData = null, ini
       ],
     });
     setActiveTopicIndex(courseData.content.length);
+  };
+
+  const handleRemoveMaterial = (index) => {
+    const updatedMaterials = [...courseData.materials];
+    updatedMaterials.splice(index, 1);
+    setCourseData({ ...courseData, materials: updatedMaterials });
   };
 
   const handleTopicChange = (index, field, value) => {
@@ -167,318 +176,267 @@ export default function CourseForm({ onSubmit, onCancel, initialData = null, ini
               setCourseData({ ...courseData, title: e.target.value })
             }
             required
-          />
-        </div>
-        <div className="col-md-4">
-          <label className="form-label fw-bold small">Duration</label>
-          <div className="d-flex gap-2">
-            <div className="flex-grow-1">
-              <select
-                className="form-select form-select-sm"
-                value={durationWeeks}
-                onChange={(e) =>
-                  handleDurationChange(
-                    e.target.value,
-                    durationDays,
-                    durationHours,
-                  )
-                }
+            />
+            <div className="d-flex gap-2 mt-3 mb-4">
+              <button
+                type="button"
+                className={`btn btn-sm ${activeSection === "topics" ? "btn-primary" : "btn-outline-secondary"}`}
+                onClick={() => setActiveSection("topics")}
               >
-                {Array.from({ length: 53 }, (_, i) => (
-                  <option key={i} value={i}>
-                    {i} {i === 1 ? "week" : "weeks"}
-                  </option>
-                ))}
-              </select>
-              <small className="text-muted d-block mt-1">Weeks</small>
-            </div>
-            <div className="flex-grow-1">
-              <select
-                className="form-select form-select-sm"
-                value={durationDays}
-                onChange={(e) =>
-                  handleDurationChange(
-                    durationWeeks,
-                    e.target.value,
-                    durationHours,
-                  )
-                }
+                Topics
+              </button>
+              <button
+                type="button"
+                className={`btn btn-sm ${activeSection === "materials" ? "btn-primary" : "btn-outline-secondary"}`}
+                onClick={() => setActiveSection("materials")}
               >
-                {Array.from({ length: 31 }, (_, i) => (
-                  <option key={i} value={i}>
-                    {i} {i === 1 ? "day" : "days"}
-                  </option>
-                ))}
-              </select>
-              <small className="text-muted d-block mt-1">Days</small>
+                Materials
+              </button>
             </div>
-            <div className="flex-grow-1">
-              <select
-                className="form-select form-select-sm"
-                value={durationHours}
-                onChange={(e) =>
-                  handleDurationChange(
-                    durationWeeks,
-                    durationDays,
-                    e.target.value,
-                  )
-                }
-              >
-                {Array.from({ length: 25 }, (_, i) => (
-                  <option key={i} value={i}>
-                    {i} {i === 1 ? "hour" : "hours"}
-                  </option>
-                ))}
-              </select>
-              <small className="text-muted d-block mt-1">Hours</small>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Thumbnail Dropdown Logic */}
-      <div className="mt-3 card p-3 bg-light border-0">
-        <label className="form-label fw-bold small">Course Thumbnail</label>
-        <div className="d-flex gap-3 mb-2">
-          <select
-            className="form-select form-select-sm w-auto"
-            value={thumbType}
-            onChange={(e) => setThumbType(e.target.value)}
-          >
-            <option value="url">External URL</option>
-            <option value="file">Upload from Device</option>
-          </select>
-        </div>
-        {thumbType === "url" ? (
-          <input
-            type="url"
-            className="form-control"
-            placeholder="https://..."
-            value={courseData.thumbnail}
-            onChange={(e) =>
-              setCourseData({ ...courseData, thumbnail: e.target.value })
-            }
-            required
-          />
-        ) : (
-          <input
-            type="file"
-            className="form-control"
-            accept="image/*"
-            onChange={(e) => handleFileUpload(e)}
-            required
-          />
-        )}
-      </div>
-
-      <div className="mt-3">
-        <label className="form-label fw-bold small">Description</label>
-        <textarea
-          className="form-control"
-          rows="2"
-          value={courseData.description}
-          onChange={(e) =>
-            setCourseData({ ...courseData, description: e.target.value })
-          }
-          required
-        />
-      </div>
-
-      <h6 className="fw-bold mt-4">Course Curriculum</h6>
-      {courseData.content.length > 1 && (
-        <div className="mb-3 d-flex flex-wrap gap-2">
-          {courseData.content.map((item, index) => (
-            <button
-              type="button"
-              key={index}
-              className={`btn btn-sm ${index === activeTopicIndex ? "btn-primary" : "btn-outline-secondary"}`}
-              onClick={() => setActiveTopicIndex(index)}
-            >
-              Topic {index + 1}
-            </button>
-          ))}
-        </div>
-      )}
-      <div className="border rounded p-3 mb-3 bg-white shadow-sm">
-        <div className="d-flex justify-content-between align-items-center mb-3">
-          <div>
-            <h6 className="mb-1">Topic {activeTopicIndex + 1}</h6>
-            <small className="text-muted">
-              {courseData.content.length} topic{courseData.content.length === 1 ? "" : "s"}
-            </small>
-          </div>
-          <button
-            type="button"
-            className="btn btn-outline-danger btn-sm"
-            onClick={() => handleRemoveTopic(activeTopicIndex)}
-            disabled={courseData.content.length === 1}
-          >
-            <i className="bi bi-trash me-1"></i>Remove Topic
-          </button>
-        </div>
-
-        {courseData.content.map((item, index) =>
-          index === activeTopicIndex ? (
-            <div key={index}>
-              <div className="row g-2 mb-2">
-                <div className="col-md-6">
-                  <input
-                    placeholder="Topic Name"
-                    className="form-control"
-                    value={item.topic}
-                    onChange={(e) =>
-                      handleTopicChange(index, "topic", e.target.value)
-                    }
-                    required
-                  />
-                </div>
-                <div className="col-md-6">
-                  <select
-                    className="form-select"
-                    value={item.type}
-                    onChange={(e) =>
-                      handleTopicChange(index, "type", e.target.value)
-                    }
+        {activeSection === "topics" ? (
+          <>
+            {courseData.content.length > 1 && (
+              <div className="mb-3 d-flex flex-wrap gap-2">
+                {courseData.content.map((item, index) => (
+                  <button
+                    type="button"
+                    key={index}
+                    className={`btn btn-sm ${index === activeTopicIndex ? "btn-primary" : "btn-outline-secondary"}`}
+                    onClick={() => setActiveTopicIndex(index)}
                   >
-                    <option value="url">YouTube URL</option>
-                    <option value="video">Local Video File</option>
-                  </select>
+                    Topic {index + 1}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="border rounded p-3 mb-3 bg-white shadow-sm">
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                  <h6 className="mb-1">Topic {activeTopicIndex + 1}</h6>
+                  <small className="text-muted">
+                    {courseData.content.length} topic{courseData.content.length === 1 ? "" : "s"}
+                  </small>
                 </div>
+                <button
+                  type="button"
+                  className="btn btn-outline-danger btn-sm"
+                  onClick={() => handleRemoveTopic(activeTopicIndex)}
+                  disabled={courseData.content.length === 1}
+                >
+                  <i className="bi bi-trash me-1"></i>Remove Topic
+                </button>
               </div>
 
-              <div className="mb-2">
-                {item.type === "url" ? (
+              {courseData.content.map((item, index) =>
+                index === activeTopicIndex ? (
+                  <div key={index}>
+                    <div className="row g-2 mb-2">
+                      <div className="col-md-6">
+                        <input
+                          placeholder="Topic Name"
+                          className="form-control"
+                          value={item.topic}
+                          onChange={(e) =>
+                            handleTopicChange(index, "topic", e.target.value)
+                          }
+                          required
+                        />
+                      </div>
+                      <div className="col-md-6">
+                        <select
+                          className="form-select"
+                          value={item.type}
+                          onChange={(e) =>
+                            handleTopicChange(index, "type", e.target.value)
+                          }
+                        >
+                          <option value="url">YouTube URL</option>
+                          <option value="video">Local Video File</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="mb-2">
+                      {item.type === "url" ? (
+                        <input
+                          type="url"
+                          className="form-control form-control-sm"
+                          placeholder="Paste YouTube URL (e.g., https://www.youtube.com/watch?v=...)"
+                          value={item.videoUrl}
+                          onChange={(e) =>
+                            handleTopicChange(index, "videoUrl", e.target.value)
+                          }
+                          required
+                        />
+                      ) : (
+                        <input
+                          type="file"
+                          className="form-control form-control-sm"
+                          accept="video/*"
+                          onChange={(e) => handleFileUpload(e, index, "videoFile")}
+                          required
+                        />
+                      )}
+                    </div>
+
+                    <input
+                      placeholder="Topic Description (Optional)"
+                      className="form-control form-control-sm"
+                      value={item.topicDesc}
+                      onChange={(e) =>
+                        handleTopicChange(index, "topicDesc", e.target.value)
+                      }
+                    />
+                  </div>
+                  ) : null
+                )}
+
+              <div className="d-flex justify-content-between mt-3">
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary btn-sm"
+                  onClick={() => setActiveTopicIndex((prev) => Math.max(prev - 1, 0))}
+                  disabled={activeTopicIndex === 0}
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary btn-sm"
+                  onClick={() =>
+                    setActiveTopicIndex((prev) =>
+                      Math.min(prev + 1, courseData.content.length - 1),
+                    )
+                  }
+                  disabled={activeTopicIndex === courseData.content.length - 1}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="border rounded p-3 mb-3 bg-white shadow-sm">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h6 className="mb-1">Course Materials</h6>
+                <small className="text-muted">
+                  {courseData.materials.length} material{courseData.materials.length === 1 ? "" : "s"}
+                </small>
+              </div>
+            </div>
+            {courseData.materials.map((item, index) => (
+              <div key={index} className="border rounded p-3 mb-3 bg-light">
+                <div className="mb-3">
+                  <label className="form-label small">Material Label</label>
                   <input
-                    type="url"
+                    type="text"
                     className="form-control form-control-sm"
-                    placeholder="Paste YouTube URL (e.g., https://www.youtube.com/watch?v=...)"
-                    value={item.videoUrl}
-                    onChange={(e) =>
-                      handleTopicChange(index, "videoUrl", e.target.value)
-                    }
-                    required
+                    placeholder="e.g. Java Material, React Notes"
+                    value={item.name || ""}
+                    onChange={(e) => {
+                      const updatedMaterials = [...courseData.materials];
+                      updatedMaterials[index].name = e.target.value;
+                      setCourseData({ ...courseData, materials: updatedMaterials });
+                    }}
                   />
-                ) : (
-                  <input
-                    type="file"
-                    className="form-control form-control-sm"
-                    accept="video/*"
-                    onChange={(e) => handleFileUpload(e, index, "videoFile")}
-                    required
-                  />
+                </div>
+                <div className="row g-2 align-items-center">
+                  <div className="col-md-4">
+                    <select
+                      className="form-select"
+                      value={item.type}
+                      onChange={(e) => {
+                        const updatedMaterials = [...courseData.materials];
+                        updatedMaterials[index].type = e.target.value;
+                        setCourseData({ ...courseData, materials: updatedMaterials });
+                      }}
+                    >
+                      <option value="text">Text Material</option>
+                      <option value="pdf">PDF / Document</option>
+                    </select>
+                  </div>
+                  <div className="col-md-6">
+                    {item.type === "text" ? (
+                      <textarea
+                        className="form-control form-control-sm"
+                        rows="3"
+                        placeholder="Enter material text..."
+                        value={item.value}
+                        onChange={(e) => {
+                          const updatedMaterials = [...courseData.materials];
+                          updatedMaterials[index].value = e.target.value;
+                          setCourseData({ ...courseData, materials: updatedMaterials });
+                        }}
+                      />
+                    ) : (
+                      <div className="input-group input-group-sm">
+                        <input
+                          type="file"
+                          className="form-control"
+                          accept=".pdf,.doc,.docx,.txt"
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              const updatedMaterials = [...courseData.materials];
+                              updatedMaterials[index].value = reader.result;
+                              updatedMaterials[index].name = file?.name || updatedMaterials[index].name;
+                              setCourseData({ ...courseData, materials: updatedMaterials });
+                            };
+                            if (file) reader.readAsDataURL(file);
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <div className="col-md-2 text-end">
+                    <button
+                      type="button"
+                      className="btn btn-outline-danger btn-sm"
+                      onClick={() => handleRemoveMaterial(index)}
+                      disabled={courseData.materials.length === 1}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+                {item.name && (
+                  <p className="mt-2 mb-0 small text-muted">Uploaded: {item.name}</p>
                 )}
               </div>
-
-              <input
-                placeholder="Topic Description (Optional)"
-                className="form-control form-control-sm"
-                value={item.topicDesc}
-                onChange={(e) =>
-                  handleTopicChange(index, "topicDesc", e.target.value)
-                }
-              />
-            </div>
-          ) : null,
+            ))}
+          </div>
         )}
 
-        <div className="d-flex justify-content-between mt-3">
-          <button
-            type="button"
-            className="btn btn-outline-secondary btn-sm"
-            onClick={() => setActiveTopicIndex((prev) => Math.max(prev - 1, 0))}
-            disabled={activeTopicIndex === 0}
-          >
-            Previous
-          </button>
+        </div>
+      </div>
+
+      <div className="d-flex flex-wrap gap-2 mb-4">
+        {activeSection === "materials" ? (
           <button
             type="button"
             className="btn btn-outline-secondary btn-sm"
             onClick={() =>
-              setActiveTopicIndex((prev) =>
-                Math.min(prev + 1, courseData.content.length - 1),
-              )
+              setCourseData({
+                ...courseData,
+                materials: [...courseData.materials, { type: "text", value: "", name: "" }],
+              })
             }
-            disabled={activeTopicIndex === courseData.content.length - 1}
           >
-            Next
+            + Add Material
           </button>
-        </div>
+        ) : null}
+        {activeSection === "topics" ? (
+          <button
+            type="button"
+            className="btn btn-outline-primary btn-sm"
+            onClick={handleAddTopic}
+          >
+            + Add Topic
+          </button>
+        ) : null}
       </div>
-
-      <h6 className="fw-bold mt-4">Course Materials</h6>
-      {courseData.materials.map((item, index) => (
-        <div key={index} className="border rounded p-3 mb-3 bg-white shadow-sm">
-          <div className="row g-2 mb-2">
-            <div className="col-md-6">
-              <select
-                className="form-select"
-                value={item.type}
-                onChange={(e) => {
-                  const updatedMaterials = [...courseData.materials];
-                  updatedMaterials[index].type = e.target.value;
-                  setCourseData({ ...courseData, materials: updatedMaterials });
-                }}
-              >
-                <option value="text">Text Material</option>
-                <option value="pdf">PDF / Document</option>
-              </select>
-            </div>
-            <div className="col-md-6">
-              {item.type === "text" ? (
-                <textarea
-                  className="form-control form-control-sm"
-                  rows="3"
-                  placeholder="Enter material text..."
-                  value={item.value}
-                  onChange={(e) => {
-                    const updatedMaterials = [...courseData.materials];
-                    updatedMaterials[index].value = e.target.value;
-                    setCourseData({ ...courseData, materials: updatedMaterials });
-                  }}
-                />
-              ) : (
-                <input
-                  type="file"
-                  className="form-control form-control-sm"
-                  accept=".pdf,.doc,.docx,.txt"
-                  onChange={(e) => {
-                    const file = e.target.files[0];
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                      const updatedMaterials = [...courseData.materials];
-                      updatedMaterials[index].value = reader.result;
-                      updatedMaterials[index].name = file?.name || updatedMaterials[index].name;
-                      setCourseData({ ...courseData, materials: updatedMaterials });
-                    };
-                    if (file) reader.readAsDataURL(file);
-                  }}
-                />
-              )}
-            </div>
-          </div>
-        </div>
-      ))}
-
-      <button
-        type="button"
-        className="btn btn-outline-secondary btn-sm mb-4"
-        onClick={() =>
-          setCourseData({
-            ...courseData,
-            materials: [...courseData.materials, { type: "text", value: "" }],
-          })
-        }
-      >
-        + Add Material
-      </button>
-
-      <button
-        type="button"
-        className="btn btn-outline-primary btn-sm mb-4"
-        onClick={handleAddTopic}
-      >
-        + Add Topic
-      </button>
 
       <div className="d-flex gap-2">
         <button type="submit" className="btn btn-primary w-100">

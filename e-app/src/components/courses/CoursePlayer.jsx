@@ -151,18 +151,13 @@ export default function CoursePlayer({
                     style={{ minHeight: "520px" }}
                   />
                 ) : (
-                  <div className="border rounded p-3 bg-light">
-                    <h6 className="fw-bold">{activeMaterial.name || `Document ${activeMaterialIndex + 1}`}</h6>
-                    <p className="mb-0 text-secondary">This document can be downloaded or opened in a separate viewer.</p>
-                    <a
-                      href={activeMaterial.value || activeMaterial.content}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-outline-primary btn-sm mt-3"
-                    >
-                      Open Document
-                    </a>
-                  </div>
+                    <div className="border rounded p-3 bg-light">
+                      <h6 className="fw-bold">{activeMaterial.name || `Text Material ${activeMaterialIndex + 1}`}</h6>
+                      <p className="mb-3 text-secondary">Text material content is shown below.</p>
+                      <div className="p-3 bg-white rounded" style={{ whiteSpace: "pre-wrap", minHeight: "200px" }}>
+                        {activeMaterial.value || "No text content available."}
+                      </div>
+                    </div>
                 )}
                 <div className="mt-3 d-flex flex-wrap gap-2">
                   <a
@@ -226,7 +221,7 @@ export default function CoursePlayer({
             <div className="card-header bg-white py-3">
               <h5 className="mb-0 fw-bold">Course Content</h5>
             </div>
-            <div className="list-group list-group-flush overflow-auto" style={{ maxHeight: "450px" }}>
+            <div className="list-group list-group-flush overflow-auto" style={{ maxHeight: "320px" }}>
               {course.content?.map((item, index) => (
                 <div
                   key={index}
@@ -269,6 +264,64 @@ export default function CoursePlayer({
                 </div>
               ))}
             </div>
+            {course.materials && course.materials.length > 0 && (
+              <div className="mt-0">
+                <div className="list-group list-group-flush">
+                  <div className="list-group-item bg-light text-muted">
+                    <strong>Materials</strong>
+                  </div>
+                  {course.materials.map((material, index) => {
+                    const label = material.name
+                      ? material.name
+                      : material.type === "pdf"
+                      ? `Document ${index + 1}`
+                      : `Text material ${index + 1}`;
+                    return (
+                      <div
+                        key={index}
+                        className={`list-group-item py-3 border-start border-4 d-flex justify-content-between align-items-center ${
+                          index === activeMaterialIndex ? "border-primary bg-light fw-bold" : "border-transparent"
+                        }`}
+                        role="button"
+                        onClick={() => setActiveMaterialIndex(index)}
+                        style={{ cursor: "pointer" }}
+                      >
+                        <div className="d-flex align-items-center">
+                          <i
+                            className={`bi ${material.type === "pdf" ? "bi-file-pdf text-danger" : "bi-file-text text-secondary"} me-3 fs-5`}
+                          ></i>
+                          <span>{label}</span>
+                        </div>
+                        {previewMode ? (
+                          <div className="d-flex gap-1" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-secondary"
+                              title="Edit this material"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                              }}
+                            >
+                              <i className="bi bi-pencil"></i>
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-danger"
+                              title="Delete this material"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                              }}
+                            >
+                              <i className="bi bi-trash"></i>
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
