@@ -310,18 +310,19 @@ const QuizTaker = ({ quiz, studentId, onComplete, onClose }) => {
               <div className="card-header bg-primary text-white d-flex align-items-center">
                 <button
                   type="button"
-                  className="btn btn-sm btn-light"
+                  className="btn btn-sm btn-light me-3"
                   onClick={() => {
                     if (typeof onClose === "function") {
                       onClose();
+                    } else {
+                      window.location.reload();
                     }
                   }}
-                  aria-label="Back to dashboard"
                 >
                   <i className="bi bi-arrow-left me-1"></i>Back
                 </button>
                 <h3 className="mb-0 flex-grow-1 text-center">{quiz.title}</h3>
-                <span style={{ width: "72px" }} aria-hidden="true"></span>
+                <span style={{ width: "72px" }}></span>
               </div>
               <div className="card-body p-4">
                 <h4 className="mb-4 text-center">Quiz Instructions</h4>

@@ -441,15 +441,6 @@ export default function StudentDashboard() {
           >
             <i className="bi bi-list me-2"></i>Menu
           </button>
-          {takingQuiz ? (
-            <QuizTaker
-              quiz={takingQuiz}
-              studentId={user.id}
-              onComplete={handleQuizComplete}
-              onClose={() => setTakingQuiz(null)}
-            />
-          ) : (
-          <>
           {activeTab === "dashboard" && (
             <div>
               <div
@@ -1022,6 +1013,15 @@ export default function StudentDashboard() {
             />
           )}
 
+          {activeTab === "quizzes" && takingQuiz && (
+            <QuizTaker
+              quiz={takingQuiz}
+              studentId={user.id}
+              onComplete={handleQuizComplete}
+              onClose={() => setTakingQuiz(null)}
+            />
+          )}
+
           {activeTab === "profile" && (
             <div>
               <Profile />
@@ -1088,8 +1088,6 @@ export default function StudentDashboard() {
               onTopicComplete={handleTopicComplete}
               onUpdateLastActive={updateLastActive}
             />
-          )}
-          </>
           )}
         </div>
       </div>

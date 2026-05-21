@@ -176,23 +176,139 @@ export default function CourseForm({ onSubmit, onCancel, initialData = null, ini
               setCourseData({ ...courseData, title: e.target.value })
             }
             required
-            />
-            <div className="d-flex gap-2 mt-3 mb-4">
-              <button
-                type="button"
-                className={`btn btn-sm ${activeSection === "topics" ? "btn-primary" : "btn-outline-secondary"}`}
-                onClick={() => setActiveSection("topics")}
+          />
+        </div>
+        <div className="col-md-4">
+          <label className="form-label fw-bold small">Duration</label>
+          <div className="d-flex gap-2">
+            <div className="flex-grow-1">
+              <select
+                className="form-select form-select-sm"
+                value={durationWeeks}
+                onChange={(e) =>
+                  handleDurationChange(
+                    e.target.value,
+                    durationDays,
+                    durationHours,
+                  )
+                }
               >
-                Topics
-              </button>
-              <button
-                type="button"
-                className={`btn btn-sm ${activeSection === "materials" ? "btn-primary" : "btn-outline-secondary"}`}
-                onClick={() => setActiveSection("materials")}
-              >
-                Materials
-              </button>
+                {Array.from({ length: 53 }, (_, i) => (
+                  <option key={i} value={i}>
+                    {i} {i === 1 ? "week" : "weeks"}
+                  </option>
+                ))}
+              </select>
+              <small className="text-muted d-block mt-1">Weeks</small>
             </div>
+            <div className="flex-grow-1">
+              <select
+                className="form-select form-select-sm"
+                value={durationDays}
+                onChange={(e) =>
+                  handleDurationChange(
+                    durationWeeks,
+                    e.target.value,
+                    durationHours,
+                  )
+                }
+              >
+                {Array.from({ length: 31 }, (_, i) => (
+                  <option key={i} value={i}>
+                    {i} {i === 1 ? "day" : "days"}
+                  </option>
+                ))}
+              </select>
+              <small className="text-muted d-block mt-1">Days</small>
+            </div>
+            <div className="flex-grow-1">
+              <select
+                className="form-select form-select-sm"
+                value={durationHours}
+                onChange={(e) =>
+                  handleDurationChange(
+                    durationWeeks,
+                    durationDays,
+                    e.target.value,
+                  )
+                }
+              >
+                {Array.from({ length: 25 }, (_, i) => (
+                  <option key={i} value={i}>
+                    {i} {i === 1 ? "hour" : "hours"}
+                  </option>
+                ))}
+              </select>
+              <small className="text-muted d-block mt-1">Hours</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 card p-3 bg-light border-0">
+        <label className="form-label fw-bold small">Course Thumbnail</label>
+        <div className="d-flex gap-3 mb-2">
+          <select
+            className="form-select form-select-sm w-auto"
+            value={thumbType}
+            onChange={(e) => setThumbType(e.target.value)}
+          >
+            <option value="url">External URL</option>
+            <option value="file">Upload from Device</option>
+          </select>
+        </div>
+        {thumbType === "url" ? (
+          <input
+            type="url"
+            className="form-control"
+            placeholder="https://..."
+            value={courseData.thumbnail}
+            onChange={(e) =>
+              setCourseData({ ...courseData, thumbnail: e.target.value })
+            }
+            required
+          />
+        ) : (
+          <input
+            type="file"
+            className="form-control"
+            accept="image/*"
+            onChange={(e) => handleFileUpload(e)}
+            required
+          />
+        )}
+      </div>
+
+      <div className="mt-3 mb-3">
+        <label className="form-label fw-bold small">Description</label>
+        <textarea
+          className="form-control"
+          rows="2"
+          value={courseData.description}
+          onChange={(e) =>
+            setCourseData({ ...courseData, description: e.target.value })
+          }
+          required
+        />
+      </div>
+
+      <div className="d-flex gap-2 mt-3 mb-4">
+        <button
+          type="button"
+          className={`btn btn-sm ${activeSection === "topics" ? "btn-primary" : "btn-outline-secondary"}`}
+          onClick={() => setActiveSection("topics")}
+        >
+          Topics
+        </button>
+        <button
+          type="button"
+          className={`btn btn-sm ${activeSection === "materials" ? "btn-primary" : "btn-outline-secondary"}`}
+          onClick={() => setActiveSection("materials")}
+        >
+          Materials
+        </button>
+      </div>
+      <div>
         {activeSection === "topics" ? (
           <>
             {courseData.content.length > 1 && (
@@ -408,8 +524,6 @@ export default function CourseForm({ onSubmit, onCancel, initialData = null, ini
             ))}
           </div>
         )}
-
-        </div>
       </div>
 
       <div className="d-flex flex-wrap gap-2 mb-4">
