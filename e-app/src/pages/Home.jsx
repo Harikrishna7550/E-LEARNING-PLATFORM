@@ -1,15 +1,11 @@
-import { useState } from "react";
+import { useTheme } from "../context/useTheme";
 import { Link, useNavigate } from "react-router-dom";
 import Footer from "../components/layout/Footer";
 import "../styles/Home.css";
 
 export default function Home() {
-  const [theme, setTheme] = useState("light");
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
-
-  const toggleTheme = () => {
-    setTheme(theme === "light" ? "dark" : "light");
-  };
 
   const handleCourseClick = () => {
     navigate("/signup");

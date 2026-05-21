@@ -26,7 +26,6 @@ export default function Profile() {
   });
 
   // Dark mode state
-  const [darkMode, setDarkMode] = useState(false);
 
   // UI state
   const [loading, setLoading] = useState(false);
@@ -46,8 +45,6 @@ export default function Profile() {
     console.log("User data:", user);
     console.log("User profile:", user.profile);
 
-    const darkModePreference = localStorage.getItem("darkModePreference") === "true";
-    setDarkMode(darkModePreference);
 
     const initData = {
       fullName: user.name || "",
@@ -73,15 +70,6 @@ export default function Profile() {
     }));
   }, [user]);
 
-  // Apply dark mode
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add("dark-mode");
-    } else {
-      document.documentElement.classList.remove("dark-mode");
-    }
-    localStorage.setItem("darkModePreference", darkMode);
-  }, [darkMode]);
 
   // Validation function
   const validateForm = () => {
@@ -177,7 +165,6 @@ export default function Profile() {
           interests: profileData.interests,
           avatar: profileData.profilePicturePreview, // Save the base64 image
         },
-        darkModePreference: darkMode,
       };
 
       console.log('SENDING PAYLOAD:', updatePayload);
@@ -407,26 +394,7 @@ export default function Profile() {
             </div>
           </div>
 
-          {/* Settings Section */}
-          <div className="form-group-section">
-            <h3 className="section-title">Preferences</h3>
-
-            <div className="toggle-option">
-              <div className="toggle-info">
-                <label htmlFor="darkMode">Dark Mode</label>
-                <p className="toggle-description">Enable dark theme for the application</p>
-              </div>
-              <label className="toggle-switch">
-                <input
-                  id="darkMode"
-                  type="checkbox"
-                  checked={darkMode}
-                  onChange={(e) => setDarkMode(e.target.checked)}
-                />
-                <span className="slider"></span>
-              </label>
-            </div>
-          </div>
+          {/* Preferences removed - global theme handled elsewhere */}
         </div>
 
         {/* Action Buttons */}

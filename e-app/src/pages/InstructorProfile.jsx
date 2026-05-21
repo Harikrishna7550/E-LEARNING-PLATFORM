@@ -11,7 +11,6 @@ export default function InstructorProfile() {
   const toast = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [darkMode, setDarkMode] = useState(() => localStorage.getItem("instructorDarkMode") === "true");
   const [expertiseInput, setExpertiseInput] = useState("");
   const [profileData, setProfileData] = useState({
     fullName: "",
@@ -29,12 +28,6 @@ export default function InstructorProfile() {
   const [originalData, setOriginalData] = useState(profileData);
   const [errors, setErrors] = useState({});
 
-  useEffect(() => {
-    const saved = localStorage.getItem("instructorDarkMode");
-    if (saved !== null) {
-      setDarkMode(saved === "true");
-    }
-  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -80,14 +73,6 @@ export default function InstructorProfile() {
     setOriginalData(initData);
   }, [user]);
 
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add("dark-mode");
-    } else {
-      document.documentElement.classList.remove("dark-mode");
-    }
-    localStorage.setItem("instructorDarkMode", darkMode ? "true" : "false");
-  }, [darkMode]);
 
   const validateUrl = (value) => {
     if (!value) return true;
@@ -286,7 +271,7 @@ export default function InstructorProfile() {
   }
 
   return (
-    <div className={`instructor-profile-page ${darkMode ? "dark-mode" : ""}`}>
+    <div className="instructor-profile-page">
       <div className="profile-header-card">
         <div>
           <p className="eyebrow">Instructor Profile</p>
@@ -296,14 +281,6 @@ export default function InstructorProfile() {
           </p>
         </div>
         <div className="header-actions">
-          <button
-            className={`mode-toggle ${darkMode ? "active" : ""}`}
-            type="button"
-            onClick={() => setDarkMode((prev) => !prev)}
-          >
-            <i className={`bi bi-moon${darkMode ? "-stars" : ""}`}></i>
-            <span>{darkMode ? "Dark mode" : "Light mode"}</span>
-          </button>
           {!isEditing && (
             <button className="btn btn-primary" type="button" onClick={() => setIsEditing(true)}>
               <i className="bi bi-pencil-square me-2"></i>Edit Profile

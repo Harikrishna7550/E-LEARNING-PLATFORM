@@ -13,6 +13,93 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+:root.dark-mode {
+  color-scheme: dark;
+  color: #e2e8f0;
+  background-color: #050816;
+}
+
+html.dark-mode body {
+  background-color: #050816;
+  color: #e2e8f0;
+}
+
+html.dark-mode .auth-page {
+  background: radial-gradient(circle at top left, rgba(82, 88, 156, 0.18), transparent 25%),
+    radial-gradient(circle at bottom right, rgba(63, 130, 248, 0.18), transparent 18%),
+    linear-gradient(180deg, #071127 0%, #0c172a 100%);
+}
+
+html.dark-mode .auth-card {
+  background: rgba(15, 23, 42, 0.96);
+  border-color: rgba(148, 163, 184, 0.16);
+  color: #e2e8f0;
+}
+
+html.dark-mode .app-navbar {
+  background: linear-gradient(135deg, #111827 0%, #1f2937 60%, #111827 100%);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+html.dark-mode .app-navbar .nav-link,
+html.dark-mode .app-navbar .navbar-toggler {
+  color: rgba(241, 245, 249, 0.92);
+}
+
+html.dark-mode .btn,
+html.dark-mode .btn-primary,
+html.dark-mode .btn-secondary {
+  color: #f8fafc;
+}
+
+/* Make auth (login/signup) text and inputs readable in dark mode */
+html.dark-mode .auth-card {
+  background: rgba(10, 14, 22, 0.92);
+  border-color: rgba(148, 163, 184, 0.08);
+  color: #e6eef8;
+}
+
+html.dark-mode .auth-card .auth-card-header h3,
+html.dark-mode .auth-card .auth-card-header p,
+html.dark-mode .auth-card .auth-card-badge {
+  color: #e6eef8;
+}
+
+html.dark-mode .auth-card .alert {
+  color: #fff;
+}
+
+html.dark-mode .form-control {
+  background: rgba(6, 10, 18, 0.6);
+  color: #e6eef8;
+  border-color: rgba(148, 163, 184, 0.12);
+}
+
+html.dark-mode .form-control::placeholder {
+  color: rgba(230, 238, 248, 0.55);
+}
+
+html.dark-mode .input-group-text {
+  background: rgba(255, 255, 255, 0.02);
+  color: #cfe6ff;
+  border-color: rgba(148, 163, 184, 0.06);
+}
+
+html.dark-mode .text-muted {
+  color: rgba(226, 232, 240, 0.6) !important;
+}
+
+html.dark-mode .text-danger,
+html.dark-mode .alert-danger {
+  color: #ffb4b4 !important;
+}
+
+/* Ensure links and small text are visible */
+html.dark-mode a,
+html.dark-mode .auth-card a {
+  color: #93c5fd;
+}
+
 a {
   font-weight: 500;
   color: #646cff;

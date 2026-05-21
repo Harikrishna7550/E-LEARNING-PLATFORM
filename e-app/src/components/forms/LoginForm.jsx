@@ -8,6 +8,7 @@ import ForgotPasswordForm from "./ForgotPasswordForm";
 export default function LoginForm() {
   // State to store email and password input
   const [form, setForm] = useState({ email: "", password: "" });
+  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const navigate = useNavigate();
@@ -127,7 +128,7 @@ export default function LoginForm() {
         <input
           className="form-control"
           placeholder="Password"
-          type="password"
+          type={showPassword ? "text" : "password"}
           value={form.password}
           onChange={(e) => {
             const value = e.target.value;
@@ -142,6 +143,14 @@ export default function LoginForm() {
           onBlur={(e) => handleBlur("password", e.target.value)}
           required
         />
+        <button
+          type="button"
+          className="btn btn-outline-secondary"
+          onClick={() => setShowPassword((prev) => !prev)}
+          aria-label={showPassword ? "Hide password" : "Show password"}
+        >
+          <i className={`bi ${showPassword ? "bi-eye-slash" : "bi-eye"}`}></i>
+        </button>
       </div>
       {errors.password && <div className="text-danger small mt-1">{errors.password}</div>}
 

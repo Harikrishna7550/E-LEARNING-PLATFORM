@@ -14,6 +14,8 @@ export default function SignupForm() {
     confirmPassword: "",
     role: "student",
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState("form"); // "form" or "otp"
   const [errors, setErrors] = useState({});
@@ -238,12 +240,20 @@ export default function SignupForm() {
         <input
           className="form-control"
           placeholder="Password"
-          type="password"
+          type={showPassword ? "text" : "password"}
           value={form.password}
           onChange={(e) => handleFieldChange("password", e.target.value)}
           onBlur={(e) => handleBlur("password", e.target.value)}
           required
         />
+        <button
+          type="button"
+          className="btn btn-outline-secondary"
+          onClick={() => setShowPassword((prev) => !prev)}
+          aria-label={showPassword ? "Hide password" : "Show password"}
+        >
+          <i className={`bi ${showPassword ? "bi-eye-slash" : "bi-eye"}`}></i>
+        </button>
       </div>
       {errors.password && <div className="text-danger">{errors.password}</div>}
 
@@ -254,12 +264,20 @@ export default function SignupForm() {
         <input
           className="form-control"
           placeholder="Confirm Password"
-          type="password"
+          type={showConfirmPassword ? "text" : "password"}
           value={form.confirmPassword}
           onChange={(e) => handleFieldChange("confirmPassword", e.target.value)}
           onBlur={(e) => handleBlur("confirmPassword", e.target.value)}
           required
         />
+        <button
+          type="button"
+          className="btn btn-outline-secondary"
+          onClick={() => setShowConfirmPassword((prev) => !prev)}
+          aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+        >
+          <i className={`bi ${showConfirmPassword ? "bi-eye-slash" : "bi-eye"}`}></i>
+        </button>
       </div>
       {errors.confirmPassword && <div className="text-danger">{errors.confirmPassword}</div>}
 
