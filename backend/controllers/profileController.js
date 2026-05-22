@@ -3,24 +3,16 @@ const { findUserById, saveUser } = require('../services/userService');
 // Get user profile
 exports.getProfile = async (req, res) => {
   try {
-    console.log("=== GET PROFILE REQUEST ===");
-    console.log("User ID:", req.user.id);
-    
     const user = await findUserById(req.user.id);
     if (!user) {
-      console.error("User not found with ID:", req.user.id);
       return res.status(404).json({ message: 'User not found' });
     }
-
-    console.log("User found:", user.name);
-    console.log("Instructor profile:", user.instructorProfile);
 
     const sanitizedUser = user.toObject();
     delete sanitizedUser.password;
     delete sanitizedUser.otp;
     delete sanitizedUser.otpExpires;
 
-    console.log("Sending sanitized user to frontend:", sanitizedUser);
     res.json(sanitizedUser);
   } catch (error) {
     console.error('getProfile error:', error);
@@ -32,14 +24,11 @@ exports.getProfile = async (req, res) => {
 exports.updateProfile = async (req, res) => {
   try {
     const { name, profile, darkModePreference, instructorProfile } = req.body;
-    console.log('UPDATE REQUEST:', { name, profile, darkModePreference, instructorProfile });
-    
+
     const user = await findUserById(req.user.id);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-
-    console.log('USER BEFORE UPDATE:', user.profile);
 
     // Update name if provided
     if (name) {
@@ -158,11 +147,8 @@ exports.updateProfile = async (req, res) => {
       user.darkModePreference = darkModePreference;
     }
 
-    console.log('USER AFTER UPDATE:', user.profile);
-    console.log('SAVING USER...');
     try {
       await saveUser(user);
-      console.log('USER SAVED SUCCESSFULLY');
     } catch (saveError) {
       console.error('ERROR SAVING USER:', saveError);
       return res.status(500).json({ message: 'Error saving profile: ' + saveError.message });
@@ -172,10 +158,6 @@ exports.updateProfile = async (req, res) => {
     delete sanitizedUser.password;
     delete sanitizedUser.otp;
     delete sanitizedUser.otpExpires;
-
-    console.log("=== PROFILE UPDATE COMPLETE ===");
-    console.log("Updated instructor profile:", sanitizedUser.instructorProfile);
-    console.log("Sending to frontend:", sanitizedUser);
 
     res.json({ message: 'Profile updated successfully', user: sanitizedUser });
   } catch (error) {

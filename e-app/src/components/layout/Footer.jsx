@@ -11,6 +11,3 @@ export default function Footer() {
     </footer>
   );
 }
-
-
-//footer component used in Home.jsx

@@ -51,16 +51,10 @@ export default function LoginForm() {
   // Handle form submission - validate and login user
   const validateForm = () => {
     const newErrors = {};
-    if (!form.email) {
-      newErrors.email = "Email is required.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      newErrors.email = "Please enter a valid email address.";
-    }
-    if (!form.password) {
-      newErrors.password = "Password is required.";
-    } else if (form.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters.";
-    }
+    const emailErr = validateField("email", form.email);
+    if (emailErr) newErrors.email = emailErr;
+    const passwordErr = validateField("password", form.password);
+    if (passwordErr) newErrors.password = passwordErr;
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -184,5 +178,3 @@ export default function LoginForm() {
     </form>
   );
 }
-
-//this component is used in Login.jsx

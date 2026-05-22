@@ -34,51 +34,6 @@ const sendOtpEmail = async ({ to, otp }) => {
   }
 };
 
-/**
- * Send password reset email
- * @param {string} userEmail
- * @param {string} resetToken
- */
-const sendResetEmail = async (userEmail, resetToken) => {
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-  const resetLink = `${frontendUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(userEmail)}`;
-
-  const html = `
-  <div style="font-family: Arial, sans-serif; color: #333;">
-    <div style="max-width:600px;margin:0 auto;padding:20px;border:1px solid #eaeaea;border-radius:8px;">
-      <h2 style="color:#111;">Reset your password</h2>
-      <p style="line-height:1.6;">We received a request to reset the password for the account associated with <strong>${userEmail}</strong>.</p>
-      <p style="line-height:1.6;">Click the button below to reset your password. This link will expire in one hour.</p>
-      <div style="text-align:center;margin:24px 0;">
-        <a href="${resetLink}" style="background-color:#28a745;color:#fff;padding:12px 20px;text-decoration:none;border-radius:6px;display:inline-block;">Reset Password</a>
-      </div>
-      <p style="font-size:12px;color:#777;">If you did not request a password reset, please ignore this email.</p>
-      <p style="font-size:12px;color:#777;">If the button does not work, copy and paste this link into your browser:</p>
-      <p style="word-break:break-all;font-size:12px;color:#0066cc;">${resetLink}</p>
-    </div>
-  </div>
-  `;
-
-  const mailOptions = {
-    from: emailFrom,
-    to: userEmail,
-    subject: 'E-Learning Platform - Reset Your Password',
-    html,
-  };
-
-  try {
-    return await transporter.sendMail(mailOptions);
-  } catch (err) {
-    console.error('sendResetEmail SMTP error:', err);
-    throw err;
-  }
-};
-
-/**
- * Send forgot password OTP email
- * @param {string} to
- * @param {string} otp
- */
 const sendForgotPasswordOtpEmail = async ({ to, otp }) => {
   const mailOptions = {
     from: emailFrom,

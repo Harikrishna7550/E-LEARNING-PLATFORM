@@ -28,6 +28,3 @@ export default function Login() {
     </>
   );
 }
-
-
-//this page used as route in app.jsx

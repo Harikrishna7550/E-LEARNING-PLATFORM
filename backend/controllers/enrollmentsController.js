@@ -2,14 +2,9 @@ const Enrollment = require('../models/Enrollment');
 
 exports.getEnrollments = async (req, res) => {
   try {
-    let enrollments;
-    if (req.user.role === 'admin') {
-      enrollments = await Enrollment.find().sort({ enrolledAt: -1 });
-    } else if (req.user.role === 'instructor') {
-      enrollments = await Enrollment.find().sort({ enrolledAt: -1 });
-    } else {
-      enrollments = await Enrollment.find({ userId: req.user.id }).sort({ enrolledAt: -1 });
-    }
+    const isPrivileged = req.user.role === 'admin' || req.user.role === 'instructor';
+    const filter = isPrivileged ? {} : { userId: req.user.id };
+    const enrollments = await Enrollment.find(filter).sort({ enrolledAt: -1 });
     res.json(enrollments);
   } catch (error) {
     console.error('getEnrollments error:', error);

@@ -11,24 +11,25 @@ export function AuthProvider({ children }) {
     loadCurrentUser();
   }, []);
 
+  const fetchCurrentProfile = async () => {
+    const response = await fetch(`${API_BASE}/profile`, {
+      method: "GET",
+      credentials: "include",
+    });
+    if (!response.ok) return { ok: false, data: null };
+    return { ok: true, data: await response.json() };
+  };
+
   const loadCurrentUser = async () => {
     dispatch({ type: "SET_LOADING", payload: true });
     try {
-      const response = await fetch(`${API_BASE}/profile`, {
-        method: "GET",
-        credentials: "include",
-      });
-      if (response.ok) {
-        const data = await response.json();
-        console.log("=== LOADED CURRENT USER ===");
-        console.log("Full user data:", data);
-        console.log("Instructor profile:", data.instructorProfile);
+      const { ok, data } = await fetchCurrentProfile();
+      if (ok) {
         dispatch({ type: "LOGIN", payload: { user: data } });
         if (data.role === "admin" || data.role === "instructor") {
           await fetchUsers();
         }
       } else {
-        console.warn("Failed to load user, status:", response.status);
         dispatch({ type: "LOGOUT" });
       }
     } catch (error) {
@@ -118,14 +119,11 @@ export function AuthProvider({ children }) {
       });
       const result = await response.json();
       if (response.ok) {
-        console.log("=== LOGIN SUCCESSFUL ===");
-        console.log("User from login response:", result.user);
         dispatch({ type: "LOGIN", payload: { user: result.user } });
-        
-        // Now fetch the complete profile including instructor profile
-        console.log("Fetching complete profile from /api/profile...");
+
+        // Fetch the complete profile including instructor profile
         await loadCurrentUser();
-        
+
         if (result.user.role === "admin" || result.user.role === "instructor") {
           await fetchUsers();
         }
@@ -161,35 +159,25 @@ export function AuthProvider({ children }) {
   const updateUserProfile = async (profileData) => {
     dispatch({ type: "SET_LOADING", payload: true });
     try {
-      console.log('=== AUTH CONTEXT UPDATE ===');
-      console.log('UPDATING PROFILE WITH:', profileData);
       const response = await fetch(`${API_BASE}/profile`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(profileData),
       });
-      
-      console.log('Response status:', response.status);
-      console.log('Response statusText:', response.statusText);
-      
+
       const result = await response.json();
-      console.log('RESPONSE FROM SERVER:', result);
-      
+
       if (response.ok) {
-        console.log('UPDATE SUCCESS, DISPATCHING NEW USER:', result.user);
         dispatch({ type: "LOGIN", payload: { user: result.user } });
         dispatch({ type: "SET_MESSAGE", payload: "Profile updated successfully" });
         return result.user;
       }
-      
-      console.error('Response not ok:', result);
+
       dispatch({ type: "SET_ERROR", payload: result.message || "Failed to update profile" });
       return null;
     } catch (error) {
-      console.error('UPDATE ERROR:', error);
-      console.error('Error name:', error.name);
-      console.error('Error message:', error.message);
+      console.error('updateUserProfile error:', error);
       dispatch({ type: "SET_ERROR", payload: "Network error: " + error.message });
       return null;
     } finally {
@@ -233,23 +221,14 @@ export function AuthProvider({ children }) {
   };
 
   const refreshUserProfile = async () => {
-    console.log("=== FORCE REFRESHING USER PROFILE ===");
     try {
-      const response = await fetch(`${API_BASE}/profile`, {
-        method: "GET",
-        credentials: "include",
-      });
-      if (response.ok) {
-        const data = await response.json();
-        console.log("Refreshed user data:", data);
-        console.log("Refreshed instructor profile:", data.instructorProfile);
+      const { ok, data } = await fetchCurrentProfile();
+      if (ok) {
         dispatch({ type: "LOGIN", payload: { user: data } });
         return data;
-      } else {
-        console.error("Failed to refresh profile, status:", response.status);
       }
     } catch (error) {
-      console.error("Error refreshing profile:", error);
+      console.error("refreshUserProfile error:", error);
     }
     return null;
   };
@@ -334,7 +313,7 @@ export function AuthProvider({ children }) {
         verifyOTP,
         login,
         logout,
-          clearError,
+        clearError,
         updateUserProfile,
         refreshUserProfile,
         sendForgotPasswordOtp,

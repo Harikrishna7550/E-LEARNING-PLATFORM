@@ -31,14 +31,7 @@ export default function InstructorProfile() {
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    if (!user) {
-      console.log("No user object available yet");
-      return;
-    }
-
-    console.log("=== LOADING INSTRUCTOR PROFILE ===");
-    console.log("User data:", user);
-    console.log("Instructor profile from user:", user.instructorProfile);
+    if (!user) return;
 
     const instructorProfile = user.instructorProfile || {};
     const subjectExpertise = Array.isArray(instructorProfile.subjectExpertise)
@@ -69,7 +62,6 @@ export default function InstructorProfile() {
       profilePicturePreview: preview,
     };
 
-    console.log("Initialized profile data:", initData);
     setProfileData(initData);
     setOriginalData(initData);
   }, [user]);
@@ -135,35 +127,25 @@ export default function InstructorProfile() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    console.log("File selected:", file.name, "Size:", file.size, "Type:", file.type);
-
     if (!file.type.startsWith("image/")) {
       toast.error("Please select a valid image file.");
-      console.error("Invalid file type:", file.type);
       return;
     }
 
     const maxBytes = 600 * 1024;
     if (file.size > maxBytes) {
       toast.error("Image size must be less than 600KB.");
-      console.error("File too large:", file.size, "bytes");
       return;
     }
 
     const reader = new FileReader();
     reader.onloadend = () => {
-      console.log("File converted to base64, length:", reader.result.length);
-      setProfileData((prev) => {
-        const updated = {
-          ...prev,
-          profilePicturePreview: reader.result,
-        };
-        console.log("Profile data updated with new image preview");
-        return updated;
-      });
+      setProfileData((prev) => ({
+        ...prev,
+        profilePicturePreview: reader.result,
+      }));
     };
     reader.onerror = () => {
-      console.error("FileReader error:", reader.error);
       toast.error("Error reading file.");
     };
     reader.readAsDataURL(file);
@@ -222,32 +204,20 @@ export default function InstructorProfile() {
         payload.instructorProfile.profilePicturePreview = imageToSend;
       }
       
-      console.log("=== INSTRUCTOR PROFILE SAVE DEBUG ===");
-      console.log("Payload being sent:", JSON.stringify(payload, null, 2));
-      console.log("User role:", user?.role);
-      console.log("Image included:", !!imageToSend);
-      
       const updatedUser = await updateUserProfile(payload);
-      
-      console.log("Response from updateUserProfile:", updatedUser);
-      
+
       if (!updatedUser) {
-        console.error("updatedUser is null or undefined");
         toast.error("Failed to save instructor profile. Please try again.");
         return;
       }
-      
-      // Force refresh to ensure data is loaded correctly
-      console.log("FORCING PROFILE REFRESH...");
+
       await refreshUserProfile();
-      
+
       setOriginalData(profileData);
       setIsEditing(false);
       toast.success("Instructor profile saved successfully!");
     } catch (error) {
       console.error("Instructor profile save error:", error);
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
       toast.error("Unable to save profile right now: " + error.message);
     } finally {
       setIsSaving(false);

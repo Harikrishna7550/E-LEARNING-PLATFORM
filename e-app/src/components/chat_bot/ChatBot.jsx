@@ -6,9 +6,9 @@ const RAG_API_URL = import.meta.env.VITE_RAG_API_URL;
 const REQUEST_TIMEOUT_MS = 90_000;
 
 const SUGGESTED_QUESTIONS = [
-  "What courses are available on the platform?",
-  "How do I enroll in a course?",
-  "How does grading and progress tracking work?",
+  "What is this platform?",
+  "How to creating an account?",
+  "how to raise a complaint?",
   "Can you recommend a course for a beginner?",
 ];
 

@@ -37,15 +37,7 @@ export default function Profile() {
 
   // Initialize profile data from user
   useEffect(() => {
-    if (!user) {
-      console.log("No user object available in Profile component");
-      return;
-    }
-
-    console.log("=== LOADING STUDENT PROFILE ===");
-    console.log("User data:", user);
-    console.log("User profile:", user.profile);
-
+    if (!user) return;
 
     const initData = {
       fullName: user.name || "",
@@ -57,8 +49,6 @@ export default function Profile() {
       interests: user.profile?.interests || [],
       profilePicturePreview: user.profile?.avatar || "/default-profile.png",
     };
-
-    console.log("Initialized profile data:", initData);
 
     setProfileData((prev) => ({
       ...prev,
@@ -168,14 +158,9 @@ export default function Profile() {
         },
       };
 
-      console.log('SENDING PAYLOAD:', updatePayload);
-
-      // Call the update user profile function
       const result = await updateUserProfile(updatePayload);
 
       if (result) {
-        // Force refresh to ensure data is loaded correctly
-        console.log("FORCING PROFILE REFRESH...");
         await refreshUserProfile();
       }
 

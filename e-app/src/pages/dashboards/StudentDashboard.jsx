@@ -88,8 +88,6 @@ export default function StudentDashboard() {
     }
   }, [location.search]);
 
-  // No localStorage sync for student dashboard data
-
   // Get only courses that student is enrolled in
   const enrolledCourses = (enrollments || [])
     .filter((e) => e.userId === user.id)
