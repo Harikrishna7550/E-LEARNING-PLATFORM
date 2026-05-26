@@ -1,4 +1,4 @@
-const { getAllUsers, updateUserById, deleteUserById, findUserById } = require('../services/userService');
+const { getAllUsers, deleteUserById, findUserById } = require('../services/userService');
 const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
 const Progress = require('../models/Progress');
@@ -27,23 +27,6 @@ exports.getUsers = async (req, res) => {
   } catch (error) {
     console.error('getUsers error:', error);
     res.status(500).json({ message: 'Server error' });
-  }
-};
-
-exports.updateUser = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const updateData = { ...req.body };
-    delete updateData.password;
-    delete updateData._id;
-    const user = await updateUserById(id, updateData);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    res.json(user);
-  } catch (error) {
-    console.error('updateUser error:', error);
-    res.status(error.status || 500).json({ message: error.message || 'Server error' });
   }
 };
 

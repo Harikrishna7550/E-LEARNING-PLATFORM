@@ -1093,26 +1093,88 @@ export default function StudentDashboard() {
   );
 }
 
+const MIN_COMPLAINT_LENGTH = 10;
+const MAX_COMPLAINT_LENGTH = 1000;
+
+function validateComplaint(raw) {
+  if (typeof raw !== "string" || !raw.trim()) {
+    return "Complaint text is required.";
+  }
+  const trimmed = raw.trim().replace(/\s+/g, " ");
+  if (trimmed.length < MIN_COMPLAINT_LENGTH) {
+    return `Complaint must be at least ${MIN_COMPLAINT_LENGTH} characters long.`;
+  }
+  if (trimmed.length > MAX_COMPLAINT_LENGTH) {
+    return `Complaint must not exceed ${MAX_COMPLAINT_LENGTH} characters.`;
+  }
+  const letterCount = (trimmed.match(/\p{L}/gu) || []).length;
+  if (letterCount < 5) {
+    return "Complaint must contain meaningful text, not just numbers or symbols.";
+  }
+  const words = trimmed.split(" ").filter((w) => /\p{L}/u.test(w));
+  if (words.length < 3) {
+    return "Complaint must contain at least 3 words describing the issue.";
+  }
+  if (/^(.)\1+$/.test(trimmed.replace(/\s/g, ""))) {
+    return "Complaint cannot be a single repeated character.";
+  }
+  if (/(.)\1{6,}/.test(trimmed)) {
+    return "Complaint contains too many repeated characters.";
+  }
+  return "";
+}
+
 function ComplaintForm({ onSubmit }) {
   const [complaint, setComplaint] = useState("");
+  const [touched, setTouched] = useState(false);
+
+  const trimmedLength = complaint.trim().length;
+  const liveError = validateComplaint(complaint);
+  const showError = touched && liveError;
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(complaint);
+    setTouched(true);
+    if (liveError) return;
+    onSubmit(complaint.trim().replace(/\s+/g, " "));
     setComplaint("");
+    setTouched(false);
   };
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} noValidate>
       <textarea
-        className="form-control"
+        className={`form-control ${showError ? "is-invalid" : ""}`}
         rows="4"
         value={complaint}
-        onChange={(e) => setComplaint(e.target.value)}
-        placeholder="Describe your complaint..."
+        onChange={(e) => {
+          setComplaint(e.target.value);
+          if (!touched) setTouched(true);
+        }}
+        onBlur={() => setTouched(true)}
+        placeholder="Describe your complaint in at least 3 words..."
+        maxLength={MAX_COMPLAINT_LENGTH}
         required
       />
-      <button className="btn btn-warning mt-2">Submit Complaint</button>
+      <div className="d-flex justify-content-between mt-1">
+        {showError ? (
+          <small className="text-danger">{liveError}</small>
+        ) : (
+          <small className="text-muted">
+            Minimum {MIN_COMPLAINT_LENGTH} characters, at least 3 words.
+          </small>
+        )}
+        <small
+          className={
+            trimmedLength > MAX_COMPLAINT_LENGTH ? "text-danger" : "text-muted"
+          }
+        >
+          {trimmedLength}/{MAX_COMPLAINT_LENGTH}
+        </small>
+      </div>
+      <button className="btn btn-warning mt-2" disabled={!!liveError}>
+        Submit Complaint
+      </button>
     </form>
   );
 }

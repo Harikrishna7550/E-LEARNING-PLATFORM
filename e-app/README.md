@@ -13,7 +13,7 @@ Single-page React application for the E-Learning Platform. Built with **React 19
 | Routing            | react-router-dom 7                         |
 | Styling / UI       | Bootstrap 5, Bootstrap Icons, Animate.css  |
 | Charts             | Recharts                                   |
-| Lint / Format      | ESLint 9, Prettier 3                       |
+| Lint / Format      | ESLint 9                       |
 
 ---
 

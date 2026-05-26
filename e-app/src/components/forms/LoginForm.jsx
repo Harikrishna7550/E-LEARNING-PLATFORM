@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
+import { useDebouncedCallback, makeInputValidator } from "../../utils/formValidation";
 import ForgotPasswordForm from "./ForgotPasswordForm";
 
 // Login form component - handles user login
@@ -10,6 +11,8 @@ export default function LoginForm() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+  const [loginError, setLoginError] = useState("");
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const navigate = useNavigate();
   // Get login function and error from auth context
@@ -40,8 +43,23 @@ export default function LoginForm() {
   };
 
   const handleBlur = (name, value) => {
+    setTouched((prev) => ({ ...prev, [name]: true }));
     const fieldError = validateField(name, value);
     setErrors((prev) => ({ ...prev, [name]: fieldError }));
+  };
+
+  const validateOnInput = makeInputValidator(validateField);
+
+  const runInputValidation = useDebouncedCallback((name, value) => {
+    setErrors((prev) => ({ ...prev, [name]: validateOnInput(name, value) }));
+  }, 300);
+
+  const handleFieldChange = (name, value) => {
+    setForm((prev) => ({ ...prev, [name]: value }));
+    setTouched((prev) => ({ ...prev, [name]: true }));
+    runInputValidation(name, value);
+    if (error) clearError();
+    if (loginError) setLoginError("");
   };
 
   useEffect(() => {
@@ -69,6 +87,8 @@ export default function LoginForm() {
       if (user) {
         toast.success("Login successful!");
         navigate(`/dashboard/${user.role}`);
+      } else {
+        setLoginError("Invalid email or password");
       }
     });
   };
@@ -86,67 +106,53 @@ export default function LoginForm() {
         <p>Sign in to continue your learning journey with a premium experience.</p>
       </div>
       {/* Show error message if login fails */}
-      {error && <div className="alert alert-danger">{error}</div>}
+      {(loginError || error) && <div className="alert alert-danger">{loginError || "Invalid email or password"}</div>}
 
       {/* Email input field */}
-      <div className="input-group mb-2">
-        <span className="input-group-text">
-          <i className="bi bi-envelope"></i>
-        </span>
-        <input
-          className="form-control"
-          placeholder="Email"
-          type="email"
-          value={form.email}
-          onChange={(e) => {
-            const value = e.target.value;
-            setForm({ ...form, email: value });
-            if (errors.email) {
-              setErrors((prev) => ({ ...prev, email: "" }));
-            }
-            if (error) {
-              clearError();
-            }
-          }}
-          onBlur={(e) => handleBlur("email", e.target.value)}
-          required
-        />
+      <div className="mb-3">
+        <div className="input-group">
+          <span className="input-group-text">
+            <i className="bi bi-envelope"></i>
+          </span>
+          <input
+            className={`form-control ${errors.email ? "is-invalid" : ""}`}
+            placeholder="Email"
+            type="email"
+            value={form.email}
+            onChange={(e) => handleFieldChange("email", e.target.value)}
+            onBlur={(e) => handleBlur("email", e.target.value)}
+            required
+          />
+        </div>
+        {errors.email && <span className="text-danger small d-block mt-2">{errors.email}</span>}
       </div>
-      {errors.email && <div className="text-danger small mt-1">{errors.email}</div>}
 
       {/* Password input field */}
-      <div className="input-group mb-2">
-        <span className="input-group-text">
-          <i className="bi bi-lock"></i>
-        </span>
-        <input
-          className="form-control"
-          placeholder="Password"
-          type={showPassword ? "text" : "password"}
-          value={form.password}
-          onChange={(e) => {
-            const value = e.target.value;
-            setForm({ ...form, password: value });
-            if (errors.password) {
-              setErrors((prev) => ({ ...prev, password: "" }));
-            }
-            if (error) {
-              clearError();
-            }
-          }}
-          onBlur={(e) => handleBlur("password", e.target.value)}
-          required
-        />
-        <button
-          type="button"
-          className="btn btn-outline-secondary"
-          onClick={() => setShowPassword((prev) => !prev)}
-          aria-label={showPassword ? "Hide password" : "Show password"}
-        >
-          <i className={showPassword ? "bi bi-eye-slash" : "bi bi-eye"}></i>
-        </button>
+      <div className="mb-3">
+        <div className="input-group">
+          <span className="input-group-text">
+            <i className="bi bi-lock"></i>
+          </span>
+          <input
+            className={`form-control ${errors.password ? "is-invalid" : ""}`}
+            placeholder="Password"
+            type={showPassword ? "text" : "password"}
+            value={form.password}
+            onChange={(e) => handleFieldChange("password", e.target.value)}
+            onBlur={(e) => handleBlur("password", e.target.value)}
+            required
+          />
+          <button
+            type="button"
+            className="auth-toggle-btn"
+            onClick={() => setShowPassword((prev) => !prev)}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+          >
+            <i className={showPassword ? "bi bi-eye-slash" : "bi bi-eye"}></i>
+          </button>
+        </div>
+        {errors.password && <span className="text-danger small d-block mt-2">{errors.password}</span>}
       </div>
-      {errors.password && <div className="text-danger small mt-1">{errors.password}</div>}
 
       {/* Forgot Password link */}
       <div className="text-end mb-2">

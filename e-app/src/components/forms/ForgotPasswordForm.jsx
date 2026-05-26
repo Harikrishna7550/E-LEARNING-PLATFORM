@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { useDebouncedCallback, makeInputValidator } from "../../utils/formValidation";
 
 // ForgotPasswordForm - handles forgot password flow with OTP verification
 export default function ForgotPasswordForm({ onBack }) {
@@ -9,25 +10,90 @@ export default function ForgotPasswordForm({ onBack }) {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
   
   const { sendForgotPasswordOtp, verifyForgotPasswordOtp, resetPassword, error, message, loading } = useAuth();
+
+  const validateField = (name, value) => {
+    switch (name) {
+      case "email":
+        if (!value.trim()) {
+          return "Email is required.";
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          return "Please enter a valid email address.";
+        }
+        return "";
+      case "otp":
+        if (!value.trim()) {
+          return "OTP is required.";
+        }
+        if (value.trim().length !== 6) {
+          return "OTP must be 6 digits.";
+        }
+        return "";
+      case "newPassword":
+        if (!value) {
+          return "New password is required.";
+        }
+        if (value.length < 6) {
+          return "Password must be at least 6 characters.";
+        }
+        if (/^\s*\d/.test(value)) {
+          return "Password cannot start with a digit.";
+        }
+        if (!/(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9])/.test(value)) {
+          return "Password must include letters, digits, and a special character.";
+        }
+        return "";
+      case "confirmPassword":
+        if (!value) {
+          return "Please confirm your password.";
+        }
+        if (value !== newPassword) {
+          return "Passwords do not match.";
+        }
+        return "";
+      default:
+        return "";
+    }
+  };
+
+  const handleBlur = (name, value) => {
+    setTouched((prev) => ({ ...prev, [name]: true }));
+    const fieldError = validateField(name, value);
+    setErrors((prev) => ({ ...prev, [name]: fieldError }));
+  };
+
+  const validateOnInput = makeInputValidator(validateField);
+
+  const runInputValidation = useDebouncedCallback((name, value) => {
+    setErrors((prev) => ({ ...prev, [name]: validateOnInput(name, value) }));
+  }, 300);
+
+  const handleInputChange = (name, value, setter) => {
+    setter(value);
+    setTouched((prev) => ({ ...prev, [name]: true }));
+    runInputValidation(name, value);
+  };
+
+  const collectErrors = (fields) => {
+    const newErrors = {};
+    fields.forEach(([name, value]) => {
+      const fieldError = validateField(name, value);
+      if (fieldError) newErrors[name] = fieldError;
+    });
+    return newErrors;
+  };
 
   // Handle email submission - send OTP
   const handleSendOTP = (e) => {
     e.preventDefault();
-    let newErrors = {};
-    
-    if (!email.trim()) {
-      newErrors.email = "Email is required.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = "Please enter a valid email address.";
-    }
-    
+    const newErrors = collectErrors([["email", email]]);
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-    
     setErrors({});
     sendForgotPasswordOtp({ email }).then((success) => {
       if (success) {
@@ -39,12 +105,11 @@ export default function ForgotPasswordForm({ onBack }) {
   // Handle OTP verification
   const handleVerifyOTP = (e) => {
     e.preventDefault();
-    
-    if (!otp.trim()) {
-      setErrors({ otp: "OTP is required" });
+    const newErrors = collectErrors([["otp", otp]]);
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
-    
     setErrors({});
     verifyForgotPasswordOtp({ email, otp }).then((success) => {
       if (success) {
@@ -56,25 +121,14 @@ export default function ForgotPasswordForm({ onBack }) {
   // Handle password reset
   const handleResetPassword = (e) => {
     e.preventDefault();
-    let newErrors = {};
-    
-    if (!newPassword) {
-      newErrors.newPassword = "New password is required.";
-    } else if (newPassword.length < 6) {
-      newErrors.newPassword = "Password must be at least 6 characters.";
-    }
-    
-    if (!confirmPassword) {
-      newErrors.confirmPassword = "Please confirm your password.";
-    } else if (newPassword !== confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match.";
-    }
-    
+    const newErrors = collectErrors([
+      ["newPassword", newPassword],
+      ["confirmPassword", confirmPassword],
+    ]);
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-    
     setErrors({});
     resetPassword({ email, otp, newPassword }).then((success) => {
       if (success) {
@@ -104,20 +158,23 @@ export default function ForgotPasswordForm({ onBack }) {
         {error && <div className="alert alert-danger">{error}</div>}
         {message && <div className="alert alert-success">{message}</div>}
 
-        <div className="input-group mb-2">
-          <span className="input-group-text">
-            <i className="bi bi-envelope"></i>
-          </span>
-          <input
-            className="form-control"
-            placeholder="Enter your registered email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
+        <div className="mb-3">
+          <div className="input-group">
+            <span className="input-group-text">
+              <i className="bi bi-envelope"></i>
+            </span>
+            <input
+              className={`form-control ${errors.email ? "is-invalid" : ""}`}
+              placeholder="Enter your registered email"
+              type="email"
+              value={email}
+              onChange={(e) => handleInputChange("email", e.target.value, setEmail)}
+              onBlur={(e) => handleBlur("email", e.target.value)}
+              required
+            />
+          </div>
+          {errors.email && <span className="text-danger small d-block mt-2">{errors.email}</span>}
         </div>
-        {errors.email && <div className="text-danger small">{errors.email}</div>}
 
         <button 
           className="btn btn-success mt-3 w-100 auth-action-btn"
@@ -152,21 +209,24 @@ export default function ForgotPasswordForm({ onBack }) {
 
         <p className="small text-muted">OTP sent to: <strong>{email}</strong></p>
 
-        <div className="input-group mb-2">
-          <span className="input-group-text">
-            <i className="bi bi-shield-lock"></i>
-          </span>
-          <input
-            className="form-control"
-            placeholder="Enter OTP"
-            type="text"
-            value={otp}
-            onChange={(e) => setOtp(e.target.value)}
-            maxLength="6"
-            required
-          />
+        <div className="mb-3">
+          <div className="input-group">
+            <span className="input-group-text">
+              <i className="bi bi-shield-lock"></i>
+            </span>
+            <input
+              className={`form-control ${errors.otp ? "is-invalid" : ""}`}
+              placeholder="Enter OTP"
+              type="text"
+              value={otp}
+              onChange={(e) => handleInputChange("otp", e.target.value, setOtp)}
+              onBlur={(e) => handleBlur("otp", e.target.value)}
+              maxLength="6"
+              required
+            />
+          </div>
+          {errors.otp && <span className="text-danger small d-block mt-2">{errors.otp}</span>}
         </div>
-        {errors.otp && <div className="text-danger small">{errors.otp}</div>}
 
         <button 
           className="btn btn-primary mt-3 w-100"
@@ -203,35 +263,41 @@ export default function ForgotPasswordForm({ onBack }) {
         {error && <div className="alert alert-danger">{error}</div>}
         {message && <div className="alert alert-success">{message}</div>}
 
-        <div className="input-group mb-2">
-          <span className="input-group-text">
-            <i className="bi bi-lock"></i>
-          </span>
-          <input
-            className="form-control"
-            placeholder="New Password"
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            required
-          />
+        <div className="mb-3">
+          <div className="input-group">
+            <span className="input-group-text">
+              <i className="bi bi-lock"></i>
+            </span>
+            <input
+              className={`form-control ${errors.newPassword ? "is-invalid" : ""}`}
+              placeholder="New Password"
+              type="password"
+              value={newPassword}
+              onChange={(e) => handleInputChange("newPassword", e.target.value, setNewPassword)}
+              onBlur={(e) => handleBlur("newPassword", e.target.value)}
+              required
+            />
+          </div>
+          {errors.newPassword && <span className="text-danger small d-block mt-2">{errors.newPassword}</span>}
         </div>
-        {errors.newPassword && <div className="text-danger small">{errors.newPassword}</div>}
 
-        <div className="input-group mb-2">
-          <span className="input-group-text">
-            <i className="bi bi-lock-fill"></i>
-          </span>
-          <input
-            className="form-control"
-            placeholder="Confirm Password"
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-          />
+        <div className="mb-3">
+          <div className="input-group">
+            <span className="input-group-text">
+              <i className="bi bi-lock-fill"></i>
+            </span>
+            <input
+              className={`form-control ${errors.confirmPassword ? "is-invalid" : ""}`}
+              placeholder="Confirm Password"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => handleInputChange("confirmPassword", e.target.value, setConfirmPassword)}
+              onBlur={(e) => handleBlur("confirmPassword", e.target.value)}
+              required
+            />
+          </div>
+          {errors.confirmPassword && <span className="text-danger small d-block mt-2">{errors.confirmPassword}</span>}
         </div>
-        {errors.confirmPassword && <div className="text-danger small">{errors.confirmPassword}</div>}
 
         <button 
           className="btn btn-success mt-3 w-100 auth-action-btn"

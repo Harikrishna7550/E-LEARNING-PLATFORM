@@ -9,7 +9,7 @@ import StudentPerformanceDashboard from "../../components/StudentPerformanceDash
 const API_BASE = "http://localhost:5000/api";
 
 export default function AdminDashboard() {
-  const { user, users, updateUser, removeUser } = useAuth();
+  const { user, users, removeUser } = useAuth();
   const toast = useToast();
   const [selectedInstructor, setSelectedInstructor] = useState(null);
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -66,10 +66,6 @@ export default function AdminDashboard() {
   const totalCourses = courses.length;
   const totalQuizzes = quizzes.length;
   const pendingComplaints = complaints.filter((c) => c.status === "pending").length;
-
-  const verifyUser = (userId) => {
-    updateUser(userId, { verified: true });
-  };
 
   const solveComplaint = async (complaintId, message = "") => {
     try {
@@ -298,14 +294,6 @@ export default function AdminDashboard() {
                               <td>{inst.email}</td>
                               <td>{instCourseIds.length} Courses</td>
                               <td>
-                                {!inst.verified && (
-                                  <button
-                                    className="btn btn-sm btn-success me-2"
-                                    onClick={() => verifyUser(inst.id)}
-                                  >
-                                    Verify
-                                  </button>
-                                )}
                                 <button
                                   className="btn btn-sm btn-outline-danger"
                                   onClick={() => removeInstructor(inst.id)}

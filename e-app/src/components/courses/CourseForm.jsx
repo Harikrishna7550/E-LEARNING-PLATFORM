@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useDebouncedCallback, makeInputValidator } from "../../utils/formValidation";
 
 // CourseForm - form to create new courses with topics and videos
 export default function CourseForm({ onSubmit, onCancel, initialData = null, initialActiveTopicIndex = 0 }) {
@@ -10,6 +11,8 @@ export default function CourseForm({ onSubmit, onCancel, initialData = null, ini
   const [durationHours, setDurationHours] = useState(0);
   const [activeTopicIndex, setActiveTopicIndex] = useState(initialActiveTopicIndex || 0);
   const [activeSection, setActiveSection] = useState("topics");
+  const [errors, setErrors] = useState({});
+  const [touchedFields, setTouchedFields] = useState({});
 
   // Main course form data
   const [courseData, setCourseData] = useState({
@@ -21,6 +24,87 @@ export default function CourseForm({ onSubmit, onCancel, initialData = null, ini
     content: [{ topic: "", type: "url", videoUrl: "", videoFile: "", topicDesc: "" }],
     materials: [{ type: "text", value: "", name: "" }],
   });
+
+  const validateField = (name, value) => {
+    switch (name) {
+      case "title":
+        if (!value.trim()) {
+          return "Course title is required.";
+        }
+        if (value.trim().length < 3) {
+          return "Course title must be at least 3 characters.";
+        }
+        if (/^\s*\d/.test(value)) {
+          return "Course title cannot start with a digit.";
+        }
+        if (!/[A-Za-z]/.test(value.trim())) {
+          return "Course title must include letters.";
+        }
+        return "";
+      case "description":
+        if (!value.trim()) {
+          return "Course description is required.";
+        }
+        if (value.trim().length < 10) {
+          return "Description must be at least 10 characters.";
+        }
+        return "";
+      case "thumbnail":
+        if (!value.trim()) {
+          return "Course thumbnail is required.";
+        }
+        if (thumbType === "url" && !value.startsWith("http")) {
+          return "Please enter a valid URL.";
+        }
+        return "";
+      case "topic":
+        if (!value.trim()) {
+          return "Topic name is required.";
+        }
+        if (value.trim().length < 3) {
+          return "Topic name must be at least 3 characters.";
+        }
+        return "";
+      case "videoUrl":
+        if (!value.trim()) {
+          return "Video URL is required.";
+        }
+        if (!value.includes("youtube.com") && !value.includes("youtu.be")) {
+          return "Please enter a valid YouTube URL.";
+        }
+        return "";
+      case "materialName":
+        if (!value.trim()) {
+          return "Material name is required.";
+        }
+        return "";
+      case "materialValue":
+        if (!value.trim()) {
+          return "Material content is required.";
+        }
+        return "";
+      default:
+        return "";
+    }
+  };
+
+  const handleBlur = (name, value, ruleName = name) => {
+    setTouchedFields((prev) => ({ ...prev, [name]: true }));
+    const fieldError = validateField(ruleName, value);
+    setErrors((prev) => ({ ...prev, [name]: fieldError }));
+  };
+
+  const validateOnInput = makeInputValidator(validateField);
+
+  const runInputValidation = useDebouncedCallback((errorKey, ruleName, value) => {
+    setErrors((prev) => ({ ...prev, [errorKey]: validateOnInput(ruleName, value) }));
+  }, 300);
+
+  const handleFieldChange = (name, value) => {
+    setCourseData((prev) => ({ ...prev, [name]: value }));
+    setTouchedFields((prev) => ({ ...prev, [name]: true }));
+    runInputValidation(name, name, value);
+  };
 
   const parseDuration = (duration = "") => {
     const result = { weeks: 0, days: 0, hours: 0 };
@@ -132,6 +216,11 @@ export default function CourseForm({ onSubmit, onCancel, initialData = null, ini
     const updatedContent = [...courseData.content];
     updatedContent[index][field] = value;
     setCourseData({ ...courseData, content: updatedContent });
+    if (field === "topic" || field === "videoUrl") {
+      const errorKey = `${field}-${index}`;
+      setTouchedFields((prev) => ({ ...prev, [errorKey]: true }));
+      runInputValidation(errorKey, field, value);
+    }
   };
 
   const handleRemoveTopic = (index) => {
@@ -151,16 +240,61 @@ export default function CourseForm({ onSubmit, onCancel, initialData = null, ini
       if (index !== null) {
         handleTopicChange(index, field, reader.result);
       } else {
-        setCourseData({ ...courseData, [field]: reader.result });
+        setCourseData((prev) => {
+          const next = { ...prev, [field]: reader.result };
+          const fieldError = validateField(field, reader.result);
+          setErrors((prevErrors) => ({ ...prevErrors, [field]: fieldError }));
+          return next;
+        });
       }
     };
     if (file) reader.readAsDataURL(file);
+  };
+
+  const validateAll = () => {
+    const newErrors = {};
+    const newTouched = {};
+    const titleErr = validateField("title", courseData.title);
+    if (titleErr) newErrors.title = titleErr;
+    newTouched.title = true;
+    const descErr = validateField("description", courseData.description);
+    if (descErr) newErrors.description = descErr;
+    newTouched.description = true;
+    const thumbErr = validateField("thumbnail", courseData.thumbnail);
+    if (thumbErr) newErrors.thumbnail = thumbErr;
+    newTouched.thumbnail = true;
+    courseData.content.forEach((item, index) => {
+      const topicErr = validateField("topic", item.topic);
+      const topicKey = `topic-${index}`;
+      newTouched[topicKey] = true;
+      if (topicErr) newErrors[topicKey] = topicErr;
+      if (item.type === "url") {
+        const urlErr = validateField("videoUrl", item.videoUrl);
+        const urlKey = `videoUrl-${index}`;
+        newTouched[urlKey] = true;
+        if (urlErr) newErrors[urlKey] = urlErr;
+      }
+    });
+    courseData.materials.forEach((item, index) => {
+      const nameKey = `materialName-${index}`;
+      const valueKey = `materialValue-${index}`;
+      const nameErr = validateField("materialName", item.name || "");
+      const valueErr = validateField("materialValue", item.value || "");
+      newTouched[nameKey] = true;
+      newTouched[valueKey] = true;
+      if (nameErr) newErrors[nameKey] = nameErr;
+      if (valueErr) newErrors[valueKey] = valueErr;
+    });
+    setTouchedFields((prev) => ({ ...prev, ...newTouched }));
+    setErrors((prev) => ({ ...prev, ...newErrors }));
+    return Object.keys(newErrors).length === 0;
   };
 
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
+        if (!validateAll()) return;
         onSubmit(courseData);
       }}
       className="p-2"
@@ -170,13 +304,13 @@ export default function CourseForm({ onSubmit, onCancel, initialData = null, ini
           <label className="form-label fw-bold small">Course Title</label>
           <input
             type="text"
-            className="form-control"
+            className={`form-control ${errors.title && touchedFields.title ? "is-invalid" : ""}`}
             value={courseData.title}
-            onChange={(e) =>
-              setCourseData({ ...courseData, title: e.target.value })
-            }
+            onChange={(e) => handleFieldChange("title", e.target.value)}
+            onBlur={(e) => handleBlur("title", e.target.value)}
             required
           />
+          {errors.title && touchedFields.title && <span className="text-danger small d-block mt-2">{errors.title}</span>}
         </div>
         <div className="col-md-4">
           <label className="form-label fw-bold small">Duration</label>
@@ -258,38 +392,44 @@ export default function CourseForm({ onSubmit, onCancel, initialData = null, ini
           </select>
         </div>
         {thumbType === "url" ? (
-          <input
-            type="url"
-            className="form-control"
-            placeholder="https://..."
-            value={courseData.thumbnail}
-            onChange={(e) =>
-              setCourseData({ ...courseData, thumbnail: e.target.value })
-            }
-            required
-          />
+          <div>
+            <input
+              type="url"
+              className={`form-control ${errors.thumbnail && touchedFields.thumbnail ? "is-invalid" : ""}`}
+              placeholder="https://..."
+              value={courseData.thumbnail}
+              onChange={(e) => handleFieldChange("thumbnail", e.target.value)}
+              onBlur={(e) => handleBlur("thumbnail", e.target.value)}
+              required
+            />
+            {errors.thumbnail && touchedFields.thumbnail && <span className="text-danger small d-block mt-2">{errors.thumbnail}</span>}
+          </div>
         ) : (
-          <input
-            type="file"
-            className="form-control"
-            accept="image/*"
-            onChange={(e) => handleFileUpload(e)}
-            required
-          />
+          <div>
+            <input
+              type="file"
+              className={`form-control ${errors.thumbnail && touchedFields.thumbnail ? "is-invalid" : ""}`}
+              accept="image/*"
+              onChange={(e) => handleFileUpload(e)}
+              onBlur={() => handleBlur("thumbnail", courseData.thumbnail)}
+              required
+            />
+            {errors.thumbnail && touchedFields.thumbnail && <span className="text-danger small d-block mt-2">{errors.thumbnail}</span>}
+          </div>
         )}
       </div>
 
       <div className="mt-3 mb-3">
         <label className="form-label fw-bold small">Description</label>
         <textarea
-          className="form-control"
+          className={`form-control ${errors.description && touchedFields.description ? "is-invalid" : ""}`}
           rows="2"
           value={courseData.description}
-          onChange={(e) =>
-            setCourseData({ ...courseData, description: e.target.value })
-          }
+          onChange={(e) => handleFieldChange("description", e.target.value)}
+          onBlur={(e) => handleBlur("description", e.target.value)}
           required
         />
+        {errors.description && touchedFields.description && <span className="text-danger small d-block mt-2">{errors.description}</span>}
       </div>
 
       <div className="d-flex gap-2 mt-3 mb-4">
@@ -350,13 +490,15 @@ export default function CourseForm({ onSubmit, onCancel, initialData = null, ini
                       <div className="col-md-6">
                         <input
                           placeholder="Topic Name"
-                          className="form-control"
+                          className={`form-control ${errors[`topic-${index}`] && touchedFields[`topic-${index}`] ? "is-invalid" : ""}`}
                           value={item.topic}
                           onChange={(e) =>
                             handleTopicChange(index, "topic", e.target.value)
                           }
+                          onBlur={(e) => handleBlur(`topic-${index}`, e.target.value)}
                           required
                         />
+                        {errors[`topic-${index}`] && touchedFields[`topic-${index}`] && <span className="text-danger small d-block mt-2">{errors[`topic-${index}`]}</span>}
                       </div>
                       <div className="col-md-6">
                         <select
@@ -374,16 +516,20 @@ export default function CourseForm({ onSubmit, onCancel, initialData = null, ini
 
                     <div className="mb-2">
                       {item.type === "url" ? (
-                        <input
-                          type="url"
-                          className="form-control form-control-sm"
-                          placeholder="Paste YouTube URL (e.g., https://www.youtube.com/watch?v=...)"
-                          value={item.videoUrl}
-                          onChange={(e) =>
-                            handleTopicChange(index, "videoUrl", e.target.value)
-                          }
-                          required
-                        />
+                        <div>
+                          <input
+                            type="url"
+                            className={`form-control form-control-sm ${errors[`videoUrl-${index}`] && touchedFields[`videoUrl-${index}`] ? "is-invalid" : ""}`}
+                            placeholder="Paste YouTube URL (e.g., https://www.youtube.com/watch?v=...)"
+                            value={item.videoUrl}
+                            onChange={(e) =>
+                              handleTopicChange(index, "videoUrl", e.target.value)
+                            }
+                            onBlur={(e) => handleBlur(`videoUrl-${index}`, e.target.value)}
+                            required
+                          />
+                          {errors[`videoUrl-${index}`] && touchedFields[`videoUrl-${index}`] && <span className="text-danger small d-block mt-2">{errors[`videoUrl-${index}`]}</span>}
+                        </div>
                       ) : (
                         <input
                           type="file"
@@ -447,15 +593,20 @@ export default function CourseForm({ onSubmit, onCancel, initialData = null, ini
                   <label className="form-label small">Material Label</label>
                   <input
                     type="text"
-                    className="form-control form-control-sm"
+                    className={`form-control form-control-sm ${errors[`materialName-${index}`] && touchedFields[`materialName-${index}`] ? "is-invalid" : ""}`}
                     placeholder="e.g. Java Material, React Notes"
                     value={item.name || ""}
                     onChange={(e) => {
                       const updatedMaterials = [...courseData.materials];
                       updatedMaterials[index].name = e.target.value;
                       setCourseData({ ...courseData, materials: updatedMaterials });
+                      const errorKey = `materialName-${index}`;
+                      setTouchedFields((prev) => ({ ...prev, [errorKey]: true }));
+                      runInputValidation(errorKey, "materialName", e.target.value);
                     }}
+                    onBlur={(e) => handleBlur(`materialName-${index}`, e.target.value, "materialName")}
                   />
+                  {errors[`materialName-${index}`] && touchedFields[`materialName-${index}`] && <span className="text-danger small d-block mt-2">{errors[`materialName-${index}`]}</span>}
                 </div>
                 <div className="row g-2 align-items-center">
                   <div className="col-md-4">
@@ -474,22 +625,29 @@ export default function CourseForm({ onSubmit, onCancel, initialData = null, ini
                   </div>
                   <div className="col-md-6">
                     {item.type === "text" ? (
-                      <textarea
-                        className="form-control form-control-sm"
-                        rows="3"
-                        placeholder="Enter material text..."
-                        value={item.value}
-                        onChange={(e) => {
-                          const updatedMaterials = [...courseData.materials];
-                          updatedMaterials[index].value = e.target.value;
-                          setCourseData({ ...courseData, materials: updatedMaterials });
-                        }}
-                      />
+                      <div>
+                        <textarea
+                          className={`form-control form-control-sm ${errors[`materialValue-${index}`] && touchedFields[`materialValue-${index}`] ? "is-invalid" : ""}`}
+                          rows="3"
+                          placeholder="Enter material text..."
+                          value={item.value}
+                          onChange={(e) => {
+                            const updatedMaterials = [...courseData.materials];
+                            updatedMaterials[index].value = e.target.value;
+                            setCourseData({ ...courseData, materials: updatedMaterials });
+                            const errorKey = `materialValue-${index}`;
+                            setTouchedFields((prev) => ({ ...prev, [errorKey]: true }));
+                            runInputValidation(errorKey, "materialValue", e.target.value);
+                          }}
+                          onBlur={(e) => handleBlur(`materialValue-${index}`, e.target.value, "materialValue")}
+                        />
+                        {errors[`materialValue-${index}`] && touchedFields[`materialValue-${index}`] && <span className="text-danger small d-block mt-2">{errors[`materialValue-${index}`]}</span>}
+                      </div>
                     ) : (
                       <div className="input-group input-group-sm">
                         <input
                           type="file"
-                          className="form-control"
+                          className={`form-control ${errors[`materialValue-${index}`] && touchedFields[`materialValue-${index}`] ? "is-invalid" : ""}`}
                           accept=".pdf,.doc,.docx,.txt"
                           onChange={(e) => {
                             const file = e.target.files[0];
@@ -502,6 +660,7 @@ export default function CourseForm({ onSubmit, onCancel, initialData = null, ini
                             };
                             if (file) reader.readAsDataURL(file);
                           }}
+                          onBlur={() => handleBlur(`materialValue-${index}`, item.value)}
                         />
                       </div>
                     )}

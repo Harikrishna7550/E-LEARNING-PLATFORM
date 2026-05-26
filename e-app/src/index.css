@@ -626,6 +626,71 @@ button:focus-visible {
   animation: letterPop 0.9s ease both;
 }
 
+.auth-card .auth-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  background: transparent;
+  border: none;
+  color: #6b7aa8;
+  font-size: 1.05rem;
+  cursor: pointer;
+  padding: 0 14px;
+  transition: color 0.2s ease;
+}
+
+.auth-card .auth-toggle-btn:hover,
+.auth-card .auth-toggle-btn:focus {
+  color: #3730a3;
+  outline: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.auth-field-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #4f5b8a;
+  margin-bottom: 8px;
+  padding-left: 4px;
+}
+
+.auth-card .auth-role-select {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  font-size: 0.95rem;
+  color: #172145;
+  cursor: pointer;
+  padding-right: 38px;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%234f46e5' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 14px 12px;
+}
+
+.auth-card .auth-role-select:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.theme-dark .auth-field-label {
+  color: rgba(226, 232, 255, 0.78);
+}
+
+.theme-dark .auth-card .auth-toggle-btn {
+  color: rgba(226, 232, 255, 0.78);
+}
+
+.theme-dark .auth-card .auth-toggle-btn:hover,
+.theme-dark .auth-card .auth-toggle-btn:focus {
+  color: #ffffff;
+}
+
 .auth-container {
   position: relative;
   z-index: 2;

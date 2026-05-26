@@ -185,25 +185,6 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const updateUser = async (userId, updateData) => {
-    try {
-      const response = await fetch(`${API_BASE}/users/${userId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(updateData),
-      });
-      const result = await response.json();
-      if (response.ok) {
-        await fetchUsers();
-        return result;
-      }
-    } catch (error) {
-      console.error("Failed to update user", error);
-    }
-    return null;
-  };
-
   const removeUser = async (userId) => {
     try {
       const response = await fetch(`${API_BASE}/users/${userId}`, {
@@ -320,7 +301,6 @@ export function AuthProvider({ children }) {
         verifyForgotPasswordOtp,
         resetPassword,
         users: state.users,
-        updateUser,
         removeUser,
       }}
     >

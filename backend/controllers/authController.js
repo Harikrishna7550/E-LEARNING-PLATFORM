@@ -1,11 +1,7 @@
 const authService = require('../services/authService');
 const User = require('../models/User');
 
-// Controller handlers use authService for business logic
 
-// @desc    Send OTP for signup
-// @route   POST /api/auth/send-otp
-// @access  Public
 exports.sendOTP = async (req, res) => {
   try {
     const result = await authService.sendSignupOtp(req.body);
@@ -16,9 +12,7 @@ exports.sendOTP = async (req, res) => {
   }
 };
 
-// @desc    Send OTP for forgot password
-// @route   POST /api/auth/send-forgot-otp
-// @access  Public
+
 exports.sendForgotPasswordOtp = async (req, res) => {
   try {
     const result = await authService.sendForgotPasswordOtp(req.body);
@@ -29,9 +23,7 @@ exports.sendForgotPasswordOtp = async (req, res) => {
   }
 };
 
-// @desc    Verify OTP for forgot password
-// @route   POST /api/auth/verify-forgot-otp
-// @access  Public
+
 exports.verifyForgotPasswordOtp = async (req, res) => {
   try {
     const result = await authService.verifyForgotPasswordOtp(req.body);
@@ -42,9 +34,7 @@ exports.verifyForgotPasswordOtp = async (req, res) => {
   }
 };
 
-// @desc    Reset password with OTP
-// @route   POST /api/auth/reset-password
-// @access  Public
+
 exports.resetPassword = async (req, res) => {
   try {
     const result = await authService.resetPassword(req.body);
@@ -55,9 +45,7 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
-// @desc    Logout user
-// @route   POST /api/auth/logout
-// @access  Public
+
 exports.logout = async (req, res) => {
   try {
     res.clearCookie('token', {
@@ -72,9 +60,7 @@ exports.logout = async (req, res) => {
   }
 };
 
-// @desc    Verify OTP and complete signup
-// @route   POST /api/auth/verify-otp
-// @access  Public
+
 exports.verifyOTP = async (req, res) => {
   try {
     const result = await authService.verifySignupOtp(req.body);
@@ -91,9 +77,7 @@ exports.verifyOTP = async (req, res) => {
   }
 };
 
-// @desc    Login user
-// @route   POST /api/auth/login
-// @access  Public
+
 exports.login = async (req, res) => {
   try {
     const result = await authService.loginUser(req.body);
@@ -110,9 +94,7 @@ exports.login = async (req, res) => {
   }
 };
 
-// @desc    Get current user
-// @route   GET /api/auth/me
-// @access  Private
+
 exports.getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');

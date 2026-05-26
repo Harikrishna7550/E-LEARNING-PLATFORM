@@ -1,11 +1,14 @@
 import React, { useState } from "react";
 import { useToast } from "../../context/ToastContext";
+import { useDebouncedCallback, makeInputValidator } from "../../utils/formValidation";
 
 // ManualQuizCreator - form to create quizzes with questions and options
 const ManualQuizCreator = ({ onCreate }) => {
   const toast = useToast();
   // Store quiz title
   const [quizTitle, setQuizTitle] = useState("");
+  const [errors, setErrors] = useState({});
+  const [touchedFields, setTouchedFields] = useState({});
   // Current question being drafted (not yet saved)
   const [currentQuestion, setCurrentQuestion] = useState({
     id: Date.now(),
@@ -19,6 +22,63 @@ const ManualQuizCreator = ({ onCreate }) => {
   const [finalizedQuestions, setFinalizedQuestions] = useState([]);
   // Track which question is being edited by its ID
   const [isEditing, setIsEditing] = useState(null);
+
+  const validateField = (name, value) => {
+    switch (name) {
+      case "quizTitle":
+        if (!value.trim()) {
+          return "Quiz title is required.";
+        }
+        if (value.trim().length < 3) {
+          return "Quiz title must be at least 3 characters.";
+        }
+        if (/^\s*\d/.test(value)) {
+          return "Quiz title cannot start with a digit.";
+        }
+        if (!/[A-Za-z]/.test(value.trim())) {
+          return "Quiz title must include letters.";
+        }
+        return "";
+      case "questionText":
+        if (!value.trim()) {
+          return "Question text is required.";
+        }
+        if (value.trim().length < 5) {
+          return "Question must be at least 5 characters.";
+        }
+        if (/^\s*\d/.test(value)) {
+          return "Question text cannot start with a digit.";
+        }
+        if (!/[A-Za-z]/.test(value.trim())) {
+          return "Question text must include letters.";
+        }
+        return "";
+      case "option":
+        if (!value.trim()) {
+          return "Option cannot be empty.";
+        }
+        return "";
+      default:
+        return "";
+    }
+  };
+
+  const handleBlur = (name, value) => {
+    setTouchedFields((prev) => ({ ...prev, [name]: true }));
+    const fieldError = validateField(name, value);
+    setErrors((prev) => ({ ...prev, [name]: fieldError }));
+  };
+
+  const validateOnInput = makeInputValidator(validateField);
+
+  const runInputValidation = useDebouncedCallback((name, ruleName, value) => {
+    setErrors((prev) => ({ ...prev, [name]: validateOnInput(ruleName, value) }));
+  }, 300);
+
+  const handleInput = (name, value, ruleName = name) => {
+    setTouchedFields((prev) => ({ ...prev, [name]: true }));
+    runInputValidation(name, ruleName, value);
+  };
 
   // Change question type (single choice or multiple choice)
   const handleTypeChange = (e) => {
@@ -35,8 +95,9 @@ const ManualQuizCreator = ({ onCreate }) => {
 
   // Save current question to the finalized list
   const saveQuestionToPreview = () => {
-    if (!currentQuestion.questionText.trim()) {
-      toast.warning("Please enter question text");
+    const questionTextError = validateField("questionText", currentQuestion.questionText);
+    if (questionTextError) {
+      toast.warning(questionTextError);
       return;
     }
 
@@ -92,8 +153,11 @@ const ManualQuizCreator = ({ onCreate }) => {
   };
 
   const handleFinalSubmit = () => {
-    if (!quizTitle) {
-      toast.warning("Please enter a Quiz Title");
+    const quizTitleError = validateField("quizTitle", quizTitle);
+    if (quizTitleError) {
+      setTouchedFields((prev) => ({ ...prev, quizTitle: true }));
+      setErrors((prev) => ({ ...prev, quizTitle: quizTitleError }));
+      toast.warning(quizTitleError);
       return;
     }
     if (finalizedQuestions.length === 0) {
@@ -139,11 +203,16 @@ const ManualQuizCreator = ({ onCreate }) => {
             <h2 className="fw-bold mb-3">Create New Quiz</h2>
             <input
               type="text"
-              className="form-control form-control-lg text-center border-0 bg-light rounded-3"
+              className={`form-control form-control-lg text-center border-0 bg-light rounded-3 ${errors.quizTitle && touchedFields.quizTitle ? "is-invalid" : ""}`}
               placeholder="Enter Quiz Title Here..."
               value={quizTitle}
-              onChange={(e) => setQuizTitle(e.target.value)}
+              onChange={(e) => {
+                setQuizTitle(e.target.value);
+                handleInput("quizTitle", e.target.value);
+              }}
+              onBlur={(e) => handleBlur("quizTitle", e.target.value)}
             />
+            {errors.quizTitle && touchedFields.quizTitle && <span className="text-danger small d-block mt-2">{errors.quizTitle}</span>}
           </div>
         </div>
 
@@ -165,16 +234,19 @@ const ManualQuizCreator = ({ onCreate }) => {
               <div className="col-md-8">
                 <label className="form-label fw-semibold">Question Text</label>
                 <textarea
-                  className="form-control"
+                  className={`form-control ${errors.questionText && touchedFields.questionText ? "is-invalid" : ""}`}
                   rows="2"
                   value={currentQuestion.questionText}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setCurrentQuestion({
                       ...currentQuestion,
                       questionText: e.target.value,
-                    })
-                  }
+                    });
+                    handleInput("questionText", e.target.value);
+                  }}
+                  onBlur={(e) => handleBlur("questionText", e.target.value)}
                 />
+                {errors.questionText && touchedFields.questionText && <span className="text-danger small d-block mt-2">{errors.questionText}</span>}
               </div>
               <div className="col-md-4">
                 <label className="form-label fw-semibold">Response Type</label>
@@ -199,7 +271,7 @@ const ManualQuizCreator = ({ onCreate }) => {
                         {String.fromCharCode(65 + i)}
                       </span>
                       <input
-                        className="form-control border-start-0"
+                        className={`form-control border-start-0 ${errors[`option-${i}`] && touchedFields[`option-${i}`] ? "is-invalid" : ""}`}
                         placeholder={`Option ${i + 1}`}
                         value={opt}
                         onChange={(e) => {
@@ -209,9 +281,17 @@ const ManualQuizCreator = ({ onCreate }) => {
                             ...currentQuestion,
                             options: newOpts,
                           });
+                          handleInput(`option-${i}`, e.target.value, "option");
+                        }}
+                        onBlur={(e) => {
+                          if (e.target.value.trim()) {
+                            setTouchedFields((prev) => ({ ...prev, [`option-${i}`]: true }));
+                            setErrors((prev) => ({ ...prev, [`option-${i}`]: validateField("option", e.target.value) }));
+                          }
                         }}
                       />
                     </div>
+                    {errors[`option-${i}`] && touchedFields[`option-${i}`] && <span className="text-danger small d-block mt-2">{errors[`option-${i}`]}</span>}
                   </div>
                 ))}
               </div>
@@ -275,18 +355,22 @@ const ManualQuizCreator = ({ onCreate }) => {
               )}
 
               {currentQuestion.type === "text" && (
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Enter accepted keyword..."
-                  value={currentQuestion.correctAnswer}
-                  onChange={(e) =>
-                    setCurrentQuestion({
-                      ...currentQuestion,
-                      correctAnswer: e.target.value,
-                    })
-                  }
-                />
+                <div>
+                  <input
+                    type="text"
+                    className={`form-control ${errors.questionText && touchedFields.questionText ? "is-invalid" : ""}`}
+                    placeholder="Enter accepted keyword..."
+                    value={currentQuestion.correctAnswer}
+                    onChange={(e) =>
+                      setCurrentQuestion({
+                        ...currentQuestion,
+                        correctAnswer: e.target.value,
+                      })
+                    }
+                    onBlur={(e) => handleBlur("questionText", e.target.value)}
+                  />
+                  {errors.questionText && touchedFields.questionText && <span className="text-danger small d-block mt-2">{errors.questionText}</span>}
+                </div>
               )}
             </div>
 

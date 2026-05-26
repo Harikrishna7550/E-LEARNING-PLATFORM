@@ -20,10 +20,6 @@ const getAllUsers = async () => {
   return User.find().select('-password');
 };
 
-const updateUserById = async (id, updateData) => {
-  return User.findByIdAndUpdate(id, updateData, { new: true }).select('-password');
-};
-
 const deleteUserById = async (id) => {
   return User.findByIdAndDelete(id);
 };
@@ -34,6 +30,5 @@ module.exports = {
   createUser,
   saveUser,
   getAllUsers,
-  updateUserById,
   deleteUserById,
 };

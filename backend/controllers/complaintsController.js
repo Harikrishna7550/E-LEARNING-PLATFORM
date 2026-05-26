@@ -14,16 +14,45 @@ exports.getComplaints = async (req, res) => {
   }
 };
 
+const validateComplaintText = (raw) => {
+  if (typeof raw !== 'string' || !raw.trim()) {
+    return { error: 'Complaint text is required' };
+  }
+  const trimmed = raw.trim().replace(/\s+/g, ' ');
+  if (trimmed.length < 10) {
+    return { error: 'Complaint must be at least 10 characters long' };
+  }
+  if (trimmed.length > 1000) {
+    return { error: 'Complaint must not exceed 1000 characters' };
+  }
+  const letterCount = (trimmed.match(/\p{L}/gu) || []).length;
+  if (letterCount < 5) {
+    return { error: 'Complaint must contain meaningful text, not just numbers or symbols' };
+  }
+  const words = trimmed.split(' ').filter((w) => /\p{L}/u.test(w));
+  if (words.length < 3) {
+    return { error: 'Complaint must contain at least 3 words describing the issue' };
+  }
+  if (/^(.)\1+$/.test(trimmed.replace(/\s/g, ''))) {
+    return { error: 'Complaint cannot be a single repeated character' };
+  }
+  if (/(.)\1{6,}/.test(trimmed)) {
+    return { error: 'Complaint contains too many repeated characters' };
+  }
+  return { value: trimmed };
+};
+
 exports.createComplaint = async (req, res) => {
   try {
     const { complaint } = req.body;
-    if (!complaint) {
-      return res.status(400).json({ message: 'Complaint text is required' });
+    const { error, value } = validateComplaintText(complaint);
+    if (error) {
+      return res.status(400).json({ message: error });
     }
     const createdComplaint = await Complaint.create({
       userId: req.user.id,
       userName: req.user.name,
-      complaint,
+      complaint: value,
     });
     res.status(201).json(createdComplaint);
   } catch (error) {

@@ -3,10 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { useChatBot } from "../../context/ChatBotContext";
+import { useDebouncedCallback, makeInputValidator } from "../../utils/formValidation";
 
 // SignupForm - form for new users to create an account
 export default function SignupForm() {
-  // Form data - name, email, password, role (student/instructor/admin)
+// Form data - name, email, password, role (student/instructor/admin)
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -19,6 +20,7 @@ export default function SignupForm() {
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState("form"); // "form" or "otp"
   const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
   const navigate = useNavigate();
   // Get auth functions and state from auth context
   const { sendOTP, verifyOTP, error, message, loading, clearError } = useAuth();
@@ -36,11 +38,11 @@ export default function SignupForm() {
         if (!value.trim()) {
           return "Name is required.";
         }
-        if (value.trim().length <= 4) {
-          return "Name must be more than 4 characters.";
+        if (value.trim().length < 4) {
+          return "Name must be at least 4 characters.";
         }
-        if (!/^[a-zA-Z0-9\s]+$/.test(value.trim())) {
-          return "Name must contain only letters, digits and spaces.";
+        if (!/^[A-Za-z\s]+$/.test(value.trim())) {
+          return "Name must contain only letters and spaces.";
         }
         return "";
       case "email":
@@ -57,6 +59,12 @@ export default function SignupForm() {
         }
         if (value.length < 6) {
           return "Password must be at least 6 characters.";
+        }
+        if (/^\s*\d/.test(value)) {
+          return "Password cannot start with a digit.";
+        }
+        if (!/(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9])/.test(value)) {
+          return "Password must include letters, digits, and a special character.";
         }
         return "";
       case "confirmPassword":
@@ -77,17 +85,23 @@ export default function SignupForm() {
     }
   };
 
+  const validateOnInput = makeInputValidator(validateField);
+
+  const runInputValidation = useDebouncedCallback((name, value) => {
+    setErrors((prev) => ({ ...prev, [name]: validateOnInput(name, value) }));
+  }, 300);
+
   const handleFieldChange = (name, value) => {
     setForm((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
-    }
+    setTouched((prev) => ({ ...prev, [name]: true }));
+    runInputValidation(name, value);
     if (error) {
       clearError();
     }
   };
 
   const handleBlur = (name, value) => {
+    setTouched((prev) => ({ ...prev, [name]: true }));
     const fieldError = validateField(name, value);
     setErrors((prev) => ({ ...prev, [name]: fieldError }));
   };
@@ -95,32 +109,12 @@ export default function SignupForm() {
   // Handle form submission - send OTP
   const handleSendOTP = (e) => {
     e.preventDefault();
-    let newErrors = {};
-    if (!form.name.trim()) {
-      newErrors.name = "Name is required.";
-    } else if (form.name.trim().length <= 4) {
-      newErrors.name = "Name must be more than 4 characters.";
-    } else if (!/^[a-zA-Z0-9\s]+$/.test(form.name.trim())) {
-      newErrors.name = "Name must contain only letters,digits and spaces.";
-    }
-    if (!form.email.trim()) {
-      newErrors.email = "Email is required.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      newErrors.email = "Please enter a valid email address.";
-    }
-    if (!form.password) {
-      newErrors.password = "Password is required.";
-    } else if (form.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters.";
-    }
-    if (!form.confirmPassword) {
-      newErrors.confirmPassword = "Please confirm your password.";
-    } else if (form.password !== form.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match.";
-    }
-    if (!["student", "instructor", "admin"].includes(form.role)) {
-      newErrors.role = "Please select a valid role.";
-    }
+    const fields = ["name", "email", "password", "confirmPassword", "role"];
+    const newErrors = {};
+    fields.forEach((name) => {
+      const fieldError = validateField(name, form[name]);
+      if (fieldError) newErrors[name] = fieldError;
+    });
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -202,12 +196,12 @@ export default function SignupForm() {
       {error && <div className="alert alert-danger">{error}</div>}
       {message && <div className="alert alert-success">{message}</div>}
 
-      <div className="input-group mb-2">
+      <div className="input-group mb-3">
         <span className="input-group-text">
           <i className="bi bi-person"></i>
         </span>
         <input
-          className="form-control"
+          className={`form-control ${errors.name ? "is-invalid" : ""}`}
           placeholder="Name"
           value={form.name}
           onChange={(e) => handleFieldChange("name", e.target.value)}
@@ -215,14 +209,14 @@ export default function SignupForm() {
           required
         />
       </div>
-      {errors.name && <div className="text-danger">{errors.name}</div>}
+      {errors.name && <span className="text-danger small d-block mb-3">{errors.name}</span>}
 
-      <div className="input-group mb-2">
+      <div className="input-group mb-3">
         <span className="input-group-text">
           <i className="bi bi-envelope"></i>
         </span>
         <input
-          className="form-control"
+          className={`form-control ${errors.email ? "is-invalid" : ""}`}
           placeholder="Email"
           type="email"
           value={form.email}
@@ -231,14 +225,14 @@ export default function SignupForm() {
           required
         />
       </div>
-      {errors.email && <div className="text-danger">{errors.email}</div>}
+      {errors.email && <span className="text-danger small d-block mb-3">{errors.email}</span>}
 
-      <div className="input-group mb-2">
+      <div className="input-group mb-3">
         <span className="input-group-text">
           <i className="bi bi-lock"></i>
         </span>
         <input
-          className="form-control"
+          className={`form-control ${errors.password ? "is-invalid" : ""}`}
           placeholder="Password"
           type={showPassword ? "text" : "password"}
           value={form.password}
@@ -248,21 +242,21 @@ export default function SignupForm() {
         />
         <button
           type="button"
-          className="btn btn-outline-secondary"
+          className="auth-toggle-btn"
           onClick={() => setShowPassword((prev) => !prev)}
           aria-label={showPassword ? "Hide password" : "Show password"}
         >
           <i className={showPassword ? "bi bi-eye-slash" : "bi bi-eye"}></i>
         </button>
       </div>
-      {errors.password && <div className="text-danger">{errors.password}</div>}
+      {errors.password && <span className="text-danger small d-block mb-3">{errors.password}</span>}
 
-      <div className="input-group mb-2">
+      <div className="input-group mb-3">
         <span className="input-group-text">
           <i className="bi bi-lock-fill"></i>
         </span>
         <input
-          className="form-control"
+          className={`form-control ${errors.confirmPassword ? "is-invalid" : ""}`}
           placeholder="Confirm Password"
           type={showConfirmPassword ? "text" : "password"}
           value={form.confirmPassword}
@@ -272,26 +266,33 @@ export default function SignupForm() {
         />
         <button
           type="button"
-          className="btn btn-outline-secondary"
+          className="auth-toggle-btn"
           onClick={() => setShowConfirmPassword((prev) => !prev)}
           aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
         >
           <i className={showConfirmPassword ? "bi bi-eye-slash" : "bi bi-eye"}></i>
         </button>
       </div>
-      {errors.confirmPassword && <div className="text-danger">{errors.confirmPassword}</div>}
+      {errors.confirmPassword && <span className="text-danger small d-block mb-3">{errors.confirmPassword}</span>}
 
-      <select
-        className="form-control mt-2"
-        value={form.role}
-        onChange={(e) => handleFieldChange("role", e.target.value)}
-        onBlur={(e) => handleBlur("role", e.target.value)}
-      >
-        <option value="student">Student</option>
-        <option value="instructor">Instructor</option>
-        <option value="admin">Admin</option>
-      </select>
-      {errors.role && <div className="text-danger">{errors.role}</div>}
+      <label className="auth-field-label" htmlFor="signup-role">I am signing up as</label>
+      <div className="input-group mb-3">
+        <span className="input-group-text">
+          <i className="bi bi-person-badge"></i>
+        </span>
+        <select
+          id="signup-role"
+          className={`form-select auth-role-select ${errors.role ? "is-invalid" : ""}`}
+          value={form.role}
+          onChange={(e) => handleFieldChange("role", e.target.value)}
+          onBlur={(e) => handleBlur("role", e.target.value)}
+        >
+          <option value="student">Student — Learn from courses</option>
+          <option value="instructor">Instructor — Create &amp; teach courses</option>
+          <option value="admin">Admin — Manage the platform</option>
+        </select>
+      </div>
+      {errors.role && <span className="text-danger small d-block mb-3">{errors.role}</span>}
 
       <button className="btn btn-primary mt-3 w-100" disabled={loading}>
         {loading ? "Sending OTP..." : "Send OTP"}
@@ -320,4 +321,4 @@ export default function SignupForm() {
 }
 
 
-//this component used in singu.jsx page
+//this component used in singup.jsx page
